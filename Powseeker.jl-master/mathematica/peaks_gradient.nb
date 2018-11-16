@@ -1,0 +1,936 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 9.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[     36020,        927]
+NotebookOptionsPosition[     35161,        893]
+NotebookOutlinePosition[     35500,        908]
+CellTagsIndexPosition[     35457,        905]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["\<\
+gradient 3*(1-x)^2*exp(-(x^2) - (y+1)^2) - 10*(x/5 - x^3 - y^5)*exp(-x^2-y^2) \
+- 1/3*exp(-(x+1)^2 - y^2)\
+\>", "WolframAlphaLong",
+ CellChangeTimes->{{3.698768367253273*^9, 3.698768369344261*^9}}],
+
+Cell[BoxData[
+ NamespaceBox["WolframAlphaQueryResults",
+  DynamicModuleBox[{Typeset`q$$ = 
+   "gradient 3*(1-x)^2*exp(-(x^2) - (y+1)^2) - 10*(x/5 - x^3 - \
+y^5)*exp(-x^2-y^2) - 1/3*exp(-(x+1)^2 - y^2)", Typeset`opts$$ = {
+   AppearanceElements -> {
+     "Warnings", "Assumptions", "Brand", "Pods", "PodMenus", "Unsuccessful", 
+      "Sources"}, Asynchronous -> All, 
+    TimeConstraint -> {30, Automatic, Automatic, Automatic}, 
+    Method -> {
+     "Formats" -> {"cell", "minput", "msound", "dataformats"}, "Server" -> 
+      "http://api.wolframalpha.com/v1/"}}, Typeset`elements$$ = {
+   "Warnings", "Assumptions", "Brand", "Pods", "PodMenus", "Unsuccessful", 
+    "Sources"}, Typeset`pod1$$ = XMLElement[
+   "pod", {"title" -> "Input interpretation", "scanner" -> "Identity", "id" -> 
+     "Input", "position" -> "100", "error" -> "false", "numsubpods" -> "1"}, {
+    
+     XMLElement["subpod", {"title" -> ""}, {
+       XMLElement[
+       "minput", {}, {
+        "Grad[-E^(-(1 + x)^2 - y^2)/3 + 3 E^(-x^2 - (1 + y)^2) (1 - x)^2 - 10 \
+E^(-x^2 - y^2) (x/5 - x^3 - y^5), {x, y}]"}], 
+       XMLElement["cell", {"compressed" -> False, "string" -> True}, {
+         Cell[
+          BoxData[
+           FormBox[
+            TagBox[
+             RowBox[{"grad", "(", 
+               RowBox[{
+                 RowBox[{
+                   RowBox[{"-", 
+                    FractionBox["1", "3"]}], " ", 
+                   SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"1", "+", "x"}], ")"}], "2"]}], "-", 
+                    SuperscriptBox["y", "2"]}]]}], "+", 
+                 RowBox[{"3", " ", 
+                   SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox["x", "2"]}], "-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"1", "+", "y"}], ")"}], "2"]}]], " ", 
+                   SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"1", "-", "x"}], ")"}], "2"]}], "-", 
+                 RowBox[{"10", " ", 
+                   SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox["x", "2"]}], "-", 
+                    SuperscriptBox["y", "2"]}]], " ", 
+                   RowBox[{"(", 
+                    RowBox[{
+                    FractionBox["x", "5"], "-", 
+                    SuperscriptBox["x", "3"], "-", 
+                    SuperscriptBox["y", "5"]}], ")"}]}]}], ")"}], 
+             PolynomialForm[#, TraditionalOrder -> False]& ], 
+            TraditionalForm]], "Output", {
+          Background -> None, 
+           GraphicsBoxOptions -> {
+            DefaultBaseStyle -> {
+              FontFamily -> "Times", 
+               "Graphics", $CellContext`GraphicsBoxOptionsDefaultAxesStyle -> 
+               Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsAxes"], \
+$CellContext`GraphicsBoxOptionsDefaultTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsTicks"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameStyle -> Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsFrame"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsFrameTicks"]}}, 
+           Graphics3DBoxOptions -> {
+            DefaultBaseStyle -> {FontFamily -> "Times", "Graphics3D"}}}, 
+          CellSize -> {550, Automatic}]}], 
+       XMLElement["dataformats", {}, {"plaintext,minput"}]}]}], 
+   Typeset`pod2$$ = XMLElement[
+   "pod", {"title" -> "Result", "scanner" -> "Identity", "id" -> "Result", 
+     "position" -> "200", "error" -> "false", "numsubpods" -> "1", "primary" -> 
+     "true"}, {
+     XMLElement["subpod", {"title" -> "", "primary" -> "true"}, {
+       XMLElement["cell", {"compressed" -> False, "string" -> True}, {
+         Cell[
+          BoxData[
+           FormBox[
+            RowBox[{"grad", "(", 
+              RowBox[{
+                RowBox[{"3", " ", 
+                  SuperscriptBox[
+                   RowBox[{"(", 
+                    RowBox[{"1", "-", "x"}], ")"}], "2"], " ", 
+                  SuperscriptBox["\[ExponentialE]", 
+                   RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox["x", "2"]}]}], "-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"y", "+", "1"}], ")"}], "2"]}]]}], "-", 
+                RowBox[{"10", " ", 
+                  SuperscriptBox["\[ExponentialE]", 
+                   RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox["x", "2"]}]}], "-", 
+                    SuperscriptBox["y", "2"]}]], " ", 
+                  RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox["x", "3"]}], "+", 
+                    FractionBox["x", "5"], "-", 
+                    RowBox[{
+                    SuperscriptBox["y", "5"]}]}], ")"}]}], "-", 
+                RowBox[{
+                  FractionBox["1", "3"], " ", 
+                  SuperscriptBox["\[ExponentialE]", 
+                   RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"x", "+", "1"}], ")"}], "2"]}]}], "-", 
+                    SuperscriptBox["y", "2"]}]]}]}], ")"}], TraditionalForm]],
+           "Output", {
+          Background -> None, 
+           GraphicsBoxOptions -> {
+            DefaultBaseStyle -> {
+              FontFamily -> "Times", 
+               "Graphics", $CellContext`GraphicsBoxOptionsDefaultAxesStyle -> 
+               Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsAxes"], \
+$CellContext`GraphicsBoxOptionsDefaultTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsTicks"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameStyle -> Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsFrame"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsFrameTicks"]}}, 
+           Graphics3DBoxOptions -> {
+            DefaultBaseStyle -> {FontFamily -> "Times", "Graphics3D"}}}, 
+          CellSize -> {550, Automatic}]}], 
+       XMLElement["dataformats", {}, {"plaintext,moutput"}]}]}], 
+   Typeset`pod3$$ = XMLElement[
+   "pod", {"title" -> "Del operator form", "scanner" -> "VectorAnalysis", 
+     "id" -> "DelOperatorForm", "position" -> "300", "error" -> "false", 
+     "numsubpods" -> "1"}, {
+     XMLElement["subpod", {"title" -> ""}, {
+       XMLElement["cell", {"compressed" -> False, "string" -> True}, {
+         Cell[
+          BoxData[
+           FormBox[
+            TagBox[
+             RowBox[{"\[Del]", "(", 
+               RowBox[{
+                 RowBox[{
+                   RowBox[{"-", 
+                    FractionBox["1", "3"]}], " ", 
+                   SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"1", "+", "x"}], ")"}], "2"]}], "-", 
+                    SuperscriptBox["y", "2"]}]]}], "+", 
+                 RowBox[{"3", " ", 
+                   SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox["x", "2"]}], "-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"1", "+", "y"}], ")"}], "2"]}]], " ", 
+                   SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"1", "-", "x"}], ")"}], "2"]}], "-", 
+                 RowBox[{"10", " ", 
+                   SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox["x", "2"]}], "-", 
+                    SuperscriptBox["y", "2"]}]], " ", 
+                   RowBox[{"(", 
+                    RowBox[{
+                    FractionBox["x", "5"], "-", 
+                    SuperscriptBox["x", "3"], "-", 
+                    SuperscriptBox["y", "5"]}], ")"}]}]}], ")"}], HoldForm], 
+            TraditionalForm]], "Output", {
+          Background -> None, 
+           GraphicsBoxOptions -> {
+            DefaultBaseStyle -> {
+              FontFamily -> "Times", 
+               "Graphics", $CellContext`GraphicsBoxOptionsDefaultAxesStyle -> 
+               Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsAxes"], \
+$CellContext`GraphicsBoxOptionsDefaultTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsTicks"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameStyle -> Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsFrame"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsFrameTicks"]}}, 
+           Graphics3DBoxOptions -> {
+            DefaultBaseStyle -> {FontFamily -> "Times", "Graphics3D"}}}, 
+          CellSize -> {550, Automatic}]}], 
+       XMLElement["dataformats", {}, {"plaintext"}]}]}], Typeset`pod4$$ = 
+   XMLElement[
+   "pod", {"title" -> "Result in 2D Cartesian coordinates", "scanner" -> 
+     "VectorAnalysis", "id" -> "VectorAnalysisResult", "position" -> "400", 
+     "error" -> "false", "numsubpods" -> "1"}, {
+     XMLElement["subpod", {"title" -> ""}, {
+       XMLElement["cell", {"compressed" -> True, "string" -> False}, {
+         Cell[
+          BoxData[
+           FormBox[
+            TemplateBox[{
+              PaneBox[
+               TagBox[
+                GridBox[{{
+                   RowBox[{
+                    RowBox[{"grad", "(", 
+                    RowBox[{
+                    RowBox[{"3", " ", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"1", "-", "x"}], ")"}], "2"], " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox["x", "2"]}]}], "-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"y", "+", "1"}], ")"}], "2"]}]]}], "-", 
+                    RowBox[{"10", " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox["x", "2"]}]}], "-", 
+                    SuperscriptBox["y", "2"]}]], " ", 
+                    RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    SuperscriptBox["x", "3"]}], "+", 
+                    FractionBox["x", "5"], "-", 
+                    RowBox[{
+                    SuperscriptBox["y", "5"]}]}], ")"}]}], "-", 
+                    RowBox[{
+                    FractionBox["1", "3"], " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"x", "+", "1"}], ")"}], "2"]}]}], "-", 
+                    SuperscriptBox["y", "2"]}]]}]}], ")"}], "\[LongEqual]", 
+                    RowBox[{"(", 
+                    TemplateBox[{",", "\",\"", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    FractionBox["2", "3"]}], " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox["x", "2"]}]}], "-", 
+                    RowBox[{"2", " ", "x"}], "-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"y", "+", "1"}], ")"}], "2"]}]], " ", 
+                    RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"2", " ", "x"}], "+", 
+                    RowBox[{"2", " ", "y"}], "+", "1"}]], " ", 
+                    RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{"30", " ", 
+                    SuperscriptBox["x", "4"]}], "-", 
+                    RowBox[{"51", " ", 
+                    SuperscriptBox["x", "2"]}], "+", 
+                    RowBox[{"30", " ", "x", " ", 
+                    SuperscriptBox["y", "5"]}], "+", "3"}], ")"}]}], "+", 
+                    RowBox[{"9", " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{"2", " ", "x"}]], " ", 
+                    RowBox[{"(", 
+                    RowBox[{
+                    SuperscriptBox["x", "3"], "-", 
+                    RowBox[{"2", " ", 
+                    SuperscriptBox["x", "2"]}], "+", "1"}], ")"}]}], "+", 
+                    RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"x", "+", "1"}], ")"}], " ", 
+                    RowBox[{"(", 
+                    RowBox[{"-", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{"2", " ", "y"}]]}], ")"}]}]}], ")"}]}], 
+                    RowBox[{
+                    RowBox[{"-", 
+                    FractionBox["2", "3"]}], " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"-", 
+                    RowBox[{
+                    SuperscriptBox["x", "2"]}]}], "-", 
+                    RowBox[{"2", " ", "x"}], "-", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"y", "+", "1"}], ")"}], "2"]}]], " ", 
+                    RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{"3", " ", "y", " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{
+                    RowBox[{"2", " ", "x"}], "+", 
+                    RowBox[{"2", " ", "y"}], "+", "1"}]], " ", 
+                    RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{"10", " ", 
+                    SuperscriptBox["x", "3"]}], "-", 
+                    RowBox[{"2", " ", "x"}], "+", 
+                    RowBox[{"5", " ", 
+                    SuperscriptBox["y", "3"], " ", 
+                    RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{"2", " ", 
+                    SuperscriptBox["y", "2"]}], "-", "5"}], ")"}]}]}], 
+                    ")"}]}], "+", 
+                    RowBox[{"9", " ", 
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{"2", " ", "x"}]], " ", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"x", "-", "1"}], ")"}], "2"], " ", 
+                    RowBox[{"(", 
+                    RowBox[{"y", "+", "1"}], ")"}]}], "-", 
+                    RowBox[{
+                    SuperscriptBox["\[ExponentialE]", 
+                    RowBox[{"2", " ", "y"}]], " ", "y"}]}], ")"}]}]}, 
+                    "RowWithSeparators"], ")"}]}]}}, 
+                 GridBoxAlignment -> {"Columns" -> {{Left}}}, 
+                 DefaultBaseStyle -> "Column", 
+                 GridBoxItemSize -> {
+                  "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}], 
+                "Column"], ImageSize -> Full], 
+              ItemBox[
+               PaneBox[
+                TagBox[
+                 StyleBox[
+                  RowBox[{"\"(\"", "\[NoBreak]", 
+                    StyleBox[
+                    TemplateBox[{
+                    TemplateBox[{"x", "\": \"", 
+                    StyleBox["\"first Cartesian coordinate\"", {
+                    GrayLevel[0.6], 
+                    LinebreakAdjustments -> {1, 100, 1, 0, 100}, LineIndent -> 
+                    0}, StripOnInput -> False]}, "RowDefault"], "\" | \"", 
+                    TemplateBox[{"y", "\": \"", 
+                    StyleBox["\"second Cartesian coordinate\"", {
+                    GrayLevel[0.6], 
+                    LinebreakAdjustments -> {1, 100, 1, 0, 100}, LineIndent -> 
+                    0}, StripOnInput -> False]}, "RowDefault"]}, 
+                    "RowDefault"], {
+                    GrayLevel[0.6], 
+                    LinebreakAdjustments -> {1, 100, 1, 0, 100}, LineIndent -> 
+                    0}, StripOnInput -> False], "\[NoBreak]", "\")\""}], {
+                  FontFamily -> "Verdana", FontSize -> 10, 
+                   GrayLevel[0.5], 
+                   LinebreakAdjustments -> {1, 100, 1, 0, 100}, LineIndent -> 
+                   0}, StripOnInput -> False], 
+                 $CellContext`TagBoxWrapper["Label"]], 
+                BaseStyle -> {LineIndent -> 0}], Alignment -> Left, 
+               StripOnInput -> False]}, "Labeled", DisplayFunction -> (FormBox[
+               GridBox[{{
+                  TagBox[
+                   ItemBox[
+                    PaneBox[
+                    TagBox[#, "SkipImageSizeLevel"], 
+                    Alignment -> {Center, Baseline}, BaselinePosition -> 
+                    Baseline], DefaultBaseStyle -> "Labeled"], 
+                   "SkipImageSizeLevel"]}, {
+                  
+                  ItemBox[#2, Alignment -> {Left, Inherited}, 
+                   DefaultBaseStyle -> "LabeledLabel"]}}, 
+                GridBoxAlignment -> {
+                 "Columns" -> {{Center}}, "Rows" -> {{Center}}}, AutoDelete -> 
+                False, GridBoxItemSize -> {
+                 "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                BaselinePosition -> {1, 1}], TraditionalForm]& ), 
+             InterpretationFunction -> (RowBox[{
+                StyleBox[
+                "Labeled", FontFamily -> "Bitstream Vera Sans", 
+                 FontSize -> -1 + Inherited], "[", 
+                RowBox[{#, ",", #2, ",", 
+                  RowBox[{"(", "\[NoBreak]", 
+                    GridBox[{{
+                    StyleBox[
+                    "Bottom", FontFamily -> "Bitstream Vera Sans", 
+                    FontSize -> -1 + Inherited], 
+                    StyleBox[
+                    "Left", FontFamily -> "Bitstream Vera Sans", 
+                    FontSize -> -1 + Inherited]}}, RowSpacings -> 1, 
+                    ColumnSpacings -> 1, RowAlignments -> Baseline, 
+                    ColumnAlignments -> Center], "\[NoBreak]", ")"}]}], 
+                "]"}]& )], TraditionalForm]], "Output", {
+          Background -> None, 
+           GraphicsBoxOptions -> {
+            DefaultBaseStyle -> {
+              FontFamily -> "Times", 
+               "Graphics", $CellContext`GraphicsBoxOptionsDefaultAxesStyle -> 
+               Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsAxes"], \
+$CellContext`GraphicsBoxOptionsDefaultTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsTicks"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameStyle -> Directive[
+                 GrayLevel[0, 0.35], FontColor -> GrayLevel[0.25], 
+                 FontOpacity -> 1, 
+                 "GraphicsFrame"], \
+$CellContext`GraphicsBoxOptionsDefaultFrameTicksStyle -> 
+               Directive[
+                FontFamily -> "Times", FontSize -> 10, 
+                 "GraphicsFrameTicks"]}}, 
+           Graphics3DBoxOptions -> {
+            DefaultBaseStyle -> {FontFamily -> "Times", "Graphics3D"}}}, 
+          CellSize -> {550, Automatic}]}], 
+       XMLElement["dataformats", {}, {"plaintext"}]}]}], Typeset`aux1$$ = {
+   True, False, {False}, True}, Typeset`aux2$$ = {True, False, {False}, True},
+    Typeset`aux3$$ = {True, False, {False}, True}, Typeset`aux4$$ = {
+   True, False, {False}, True}, Typeset`asyncpods$$ = {}, Typeset`nonpods$$ = {
+    XMLElement["assumptions", {"count" -> "1"}, {
+      XMLElement[
+      "assumption", {
+       "type" -> "Clash", "word" -> "gradient", "template" -> 
+        "Assuming \"${word}\" is ${desc1}. Use as ${desc2} instead", "count" -> 
+        "2"}, {
+        XMLElement[
+        "value", {
+         "name" -> "SloppyFunction", "desc" -> "a function", "input" -> 
+          "*C.gradient-_*SloppyFunction-"}, {}], 
+        XMLElement[
+        "value", {
+         "name" -> "Unit", "desc" -> "a unit", "input" -> 
+          "*C.gradient-_*Unit-"}, {}]}]}]}, Typeset`initdone$$ = True, 
+   Typeset`queryinfo$$ = {
+   "success" -> "true", "error" -> "false", "numpods" -> "4", "datatypes" -> 
+    "Grad", "timedout" -> "", "timedoutpods" -> "", "timing" -> "3.344", 
+    "parsetiming" -> "2.335", "parsetimedout" -> "false", "recalculate" -> "",
+     "id" -> "MSPa358020g2ea5440859ic9000045bi167e3fb88fgf", "host" -> 
+    "http://www4b.wolframalpha.com", "server" -> "64", "related" -> 
+    "http://www4b.wolframalpha.com/api/v2/relatedQueries.jsp?id=\
+MSPa358120g2ea5440859ic9000031975ag5gf5566hh3717808796668037668", "version" -> 
+    "2.6"}, Typeset`sessioninfo$$ = {
+   "TimeZone" -> -7., 
+    "Date" -> {2017, 3, 17, 12, 39, 35.581062`8.303793886089347}, "Line" -> 1,
+     "SessionID" -> 24917501344957048610}, Typeset`showpods$$ = {1, 2, 3, 4}, 
+   Typeset`failedpods$$ = {}, Typeset`chosen$$ = {}, Typeset`open$$ = False, 
+   Typeset`newq$$ = 
+   "gradient 3*(1-x)^2*exp(-(x^2) - (y+1)^2) - 10*(x/5 - x^3 - \
+y^5)*exp(-x^2-y^2) - 1/3*exp(-(x+1)^2 - y^2)"}, 
+   DynamicBox[ToBoxes[
+     AlphaIntegration`FormatAlphaResults[
+      Dynamic[{
+       1, {Typeset`pod1$$, Typeset`pod2$$, Typeset`pod3$$, Typeset`pod4$$}, {
+        Typeset`aux1$$, Typeset`aux2$$, Typeset`aux3$$, Typeset`aux4$$}, 
+        Typeset`chosen$$, Typeset`open$$, Typeset`elements$$, Typeset`q$$, 
+        Typeset`opts$$, Typeset`nonpods$$, Typeset`queryinfo$$, 
+        Typeset`sessioninfo$$, Typeset`showpods$$, Typeset`failedpods$$, 
+        Typeset`newq$$}]], StandardForm],
+    ImageSizeCache->{881., {229., 234.}},
+    TrackedSymbols:>{Typeset`showpods$$, Typeset`failedpods$$}],
+   DynamicModuleValues:>{},
+   Initialization:>If[
+     Not[Typeset`initdone$$], Null; 
+     WolframAlphaClient`Private`doAsyncUpdates[
+       Hold[{Typeset`pod1$$, Typeset`pod2$$, Typeset`pod3$$, Typeset`pod4$$}],
+        Typeset`asyncpods$$, 
+       Dynamic[Typeset`failedpods$$]]; Typeset`asyncpods$$ = {}; 
+     Typeset`initdone$$ = True],
+   SynchronousInitialization->False],
+  BaseStyle->{Deployed -> True},
+  DeleteWithContents->True,
+  Editable->False,
+  SelectWithContents->True]], "Print",
+ CellMargins->{{20, 10}, {Inherited, Inherited}},
+ CellChangeTimes->{3.698768378568606*^9}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"p", "[", 
+   RowBox[{"x", ",", "y"}], "]"}], ":=", 
+  RowBox[{
+   RowBox[{"3", "*", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"1", "-", "x"}], ")"}], "^", "2"}], "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{"(", 
+        RowBox[{"x", "^", "2"}], ")"}]}], "-", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"y", "+", "1"}], ")"}], "^", "2"}]}], "]"}]}], "-", 
+   RowBox[{"10", "*", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"x", "/", "5"}], "-", 
+      RowBox[{"x", "^", "3"}], "-", 
+      RowBox[{"y", "^", "5"}]}], ")"}], "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{"x", "^", "2"}]}], "-", 
+      RowBox[{"y", "^", "2"}]}], "]"}]}], "-", 
+   RowBox[{
+    RowBox[{"1", "/", "3"}], "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"x", "+", "1"}], ")"}], "^", "2"}]}], "-", 
+      RowBox[{"y", "^", "2"}]}], "]"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.698768565201941*^9, 3.6987686108413773`*^9}, {
+  3.698769574766506*^9, 3.6987696436840067`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"g", " ", "=", " ", 
+  RowBox[{"Simplify", "[", 
+   RowBox[{"Grad", "[", 
+    RowBox[{
+     RowBox[{"p", "[", 
+      RowBox[{"x", ",", "y"}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", "y"}], "}"}]}], "]"}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.6987686181376047`*^9, 3.698768674014256*^9}}],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"-", 
+     FractionBox["2", "3"]}], " ", 
+    SuperscriptBox["\[ExponentialE]", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", "2"}], " ", "x"}], "-", 
+      SuperscriptBox["x", "2"], "-", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        RowBox[{"1", "+", "y"}], ")"}], "2"]}]], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", 
+        SuperscriptBox["\[ExponentialE]", 
+         RowBox[{"2", " ", "y"}]]}], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "+", "x"}], ")"}]}], "+", 
+      RowBox[{"9", " ", 
+       SuperscriptBox["\[ExponentialE]", 
+        RowBox[{"2", " ", "x"}]], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         RowBox[{"2", " ", 
+          SuperscriptBox["x", "2"]}], "+", 
+         SuperscriptBox["x", "3"]}], ")"}]}], "+", 
+      RowBox[{
+       SuperscriptBox["\[ExponentialE]", 
+        RowBox[{"1", "+", 
+         RowBox[{"2", " ", "x"}], "+", 
+         RowBox[{"2", " ", "y"}]}]], " ", 
+       RowBox[{"(", 
+        RowBox[{"3", "-", 
+         RowBox[{"51", " ", 
+          SuperscriptBox["x", "2"]}], "+", 
+         RowBox[{"30", " ", 
+          SuperscriptBox["x", "4"]}], "+", 
+         RowBox[{"30", " ", "x", " ", 
+          SuperscriptBox["y", "5"]}]}], ")"}]}]}], ")"}]}], ",", 
+   RowBox[{
+    RowBox[{"-", 
+     FractionBox["2", "3"]}], " ", 
+    SuperscriptBox["\[ExponentialE]", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", "2"}], " ", "x"}], "-", 
+      SuperscriptBox["x", "2"], "-", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        RowBox[{"1", "+", "y"}], ")"}], "2"]}]], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", 
+        SuperscriptBox["\[ExponentialE]", 
+         RowBox[{"2", " ", "y"}]]}], " ", "y"}], "+", 
+      RowBox[{"9", " ", 
+       SuperscriptBox["\[ExponentialE]", 
+        RowBox[{"2", " ", "x"}]], " ", 
+       SuperscriptBox[
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"-", "1"}], "+", "x"}], ")"}], "2"], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "+", "y"}], ")"}]}], "+", 
+      RowBox[{"3", " ", 
+       SuperscriptBox["\[ExponentialE]", 
+        RowBox[{"1", "+", 
+         RowBox[{"2", " ", "x"}], "+", 
+         RowBox[{"2", " ", "y"}]}]], " ", "y", " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"-", "2"}], " ", "x"}], "+", 
+         RowBox[{"10", " ", 
+          SuperscriptBox["x", "3"]}], "+", 
+         RowBox[{"5", " ", 
+          SuperscriptBox["y", "3"], " ", 
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"-", "5"}], "+", 
+            RowBox[{"2", " ", 
+             SuperscriptBox["y", "2"]}]}], ")"}]}]}], ")"}]}]}], ")"}]}]}], 
+  "}"}]], "Output",
+ CellChangeTimes->{{3.698768645044636*^9, 3.6987686749341288`*^9}, 
+   3.698769647905291*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"CForm", "[", "g", "]"}]], "Input",
+ CellChangeTimes->{{3.698768678993587*^9, 3.698768681695361*^9}, {
+  3.69876932046264*^9, 3.6987693435003967`*^9}, {3.698769395763624*^9, 
+  3.69876939782796*^9}}],
+
+Cell["\<\
+List((-2*Power(E,-2*x - Power(x,2) - Power(1 + y,2))*
+      (-(Power(E,2*y)*(1 + x)) + 9*Power(E,2*x)*(1 - 2*Power(x,2) + \
+Power(x,3)) + 
+        Power(E,1 + 2*x + 2*y)*(3 - 51*Power(x,2) + 30*Power(x,4) + \
+30*x*Power(y,5))))/3.,
+   (-2*Power(E,-2*x - Power(x,2) - Power(1 + y,2))*
+      (-(Power(E,2*y)*y) + 9*Power(E,2*x)*Power(-1 + x,2)*(1 + y) + 
+        3*Power(E,1 + 2*x + 2*y)*y*(-2*x + 10*Power(x,3) + 5*Power(y,3)*(-5 + \
+2*Power(y,2))))
+      )/3.)\
+\>", "Output",
+ CellChangeTimes->{
+  3.69876867955577*^9, {3.698769326136998*^9, 3.6987693444207573`*^9}, 
+   3.698769398663199*^9, 3.698769653379649*^9}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"p2", "[", 
+   RowBox[{"x", ",", "y"}], "]"}], ":=", 
+  RowBox[{
+   RowBox[{"3", "*", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"1", "-", "x"}], ")"}], "^", "2"}], "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{"(", 
+        RowBox[{"x", "^", "2"}], ")"}]}], "-", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"y", "+", "1"}], ")"}], "^", "2"}]}], "]"}]}], "-", 
+   RowBox[{"7", "*", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"x", "/", "5"}], "-", 
+      RowBox[{"x", "^", "2"}], "-", 
+      RowBox[{"y", "^", "4"}]}], ")"}], "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", 
+        RowBox[{"x", "^", "2"}]}], "/", "2"}], "-", 
+      RowBox[{
+       RowBox[{"(", "y", ")"}], "^", "2"}]}], "]"}]}], "-", 
+   RowBox[{
+    RowBox[{"1", "/", "3"}], "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"x", "+", "1"}], ")"}], "^", "2"}]}], "-", 
+      RowBox[{"y", "^", "2"}]}], "]"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.699234526725622*^9, 3.699234664516292*^9}, {
+  3.699282612770043*^9, 3.699282671291857*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"g2", " ", "=", " ", 
+  RowBox[{"Simplify", "[", 
+   RowBox[{"Grad", "[", 
+    RowBox[{
+     RowBox[{"p2", "[", 
+      RowBox[{"x", ",", "y"}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", "y"}], "}"}]}], "]"}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.699234673944656*^9, 3.69923472738869*^9}, {
+  3.699282674412909*^9, 3.69928269868268*^9}}],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{
+    FractionBox["1", "15"], " ", 
+    SuperscriptBox["\[ExponentialE]", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", "2"}], " ", "x"}], "-", 
+      SuperscriptBox["x", "2"], "-", 
+      SuperscriptBox[
+       RowBox[{"(", 
+        RowBox[{"1", "+", "y"}], ")"}], "2"]}]], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"10", " ", 
+       SuperscriptBox["\[ExponentialE]", 
+        RowBox[{"2", " ", "y"}]], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "+", "x"}], ")"}]}], "-", 
+      RowBox[{"90", " ", 
+       SuperscriptBox["\[ExponentialE]", 
+        RowBox[{"2", " ", "x"}]], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         RowBox[{"2", " ", 
+          SuperscriptBox["x", "2"]}], "+", 
+         SuperscriptBox["x", "3"]}], ")"}]}], "-", 
+      RowBox[{"21", " ", 
+       SuperscriptBox["\[ExponentialE]", 
+        RowBox[{"1", "+", 
+         RowBox[{"2", " ", "x"}], "+", 
+         FractionBox[
+          SuperscriptBox["x", "2"], "2"], "+", 
+         RowBox[{"2", " ", "y"}]}]], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         SuperscriptBox["x", "2"], "+", 
+         RowBox[{"5", " ", 
+          SuperscriptBox["x", "3"]}], "+", 
+         RowBox[{"5", " ", "x", " ", 
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"-", "2"}], "+", 
+            SuperscriptBox["y", "4"]}], ")"}]}]}], ")"}]}]}], ")"}]}], ",", 
+   RowBox[{
+    RowBox[{
+     FractionBox["2", "3"], " ", 
+     SuperscriptBox["\[ExponentialE]", 
+      RowBox[{
+       RowBox[{"-", 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{"1", "+", "x"}], ")"}], "2"]}], "-", 
+       SuperscriptBox["y", "2"]}]], " ", "y"}], "+", 
+    RowBox[{"28", " ", 
+     SuperscriptBox["\[ExponentialE]", 
+      RowBox[{
+       RowBox[{"-", 
+        FractionBox[
+         SuperscriptBox["x", "2"], "2"]}], "-", 
+       SuperscriptBox["y", "2"]}]], " ", 
+     SuperscriptBox["y", "3"]}], "-", 
+    RowBox[{"6", " ", 
+     SuperscriptBox["\[ExponentialE]", 
+      RowBox[{
+       RowBox[{"-", 
+        SuperscriptBox["x", "2"]}], "-", 
+       SuperscriptBox[
+        RowBox[{"(", 
+         RowBox[{"1", "+", "y"}], ")"}], "2"]}]], " ", 
+     SuperscriptBox[
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"-", "1"}], "+", "x"}], ")"}], "2"], " ", 
+     RowBox[{"(", 
+      RowBox[{"1", "+", "y"}], ")"}]}], "-", 
+    RowBox[{
+     FractionBox["14", "5"], " ", 
+     SuperscriptBox["\[ExponentialE]", 
+      RowBox[{
+       RowBox[{"-", 
+        FractionBox[
+         SuperscriptBox["x", "2"], "2"]}], "-", 
+       SuperscriptBox["y", "2"]}]], " ", "y", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"-", "x"}], "+", 
+       RowBox[{"5", " ", 
+        SuperscriptBox["x", "2"]}], "+", 
+       RowBox[{"5", " ", 
+        SuperscriptBox["y", "4"]}]}], ")"}]}]}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.699234704794978*^9, 3.699234728086421*^9}, {
+  3.699282676997087*^9, 3.699282699922193*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"CForm", "[", "g2", "]"}]], "Input",
+ CellChangeTimes->{{3.699234721465952*^9, 3.6992347335051394`*^9}, {
+  3.699282702728936*^9, 3.699282704293859*^9}}],
+
+Cell["\<\
+List((Power(E,-2*x - Power(x,2) - Power(1 + y,2))*
+      (10*Power(E,2*y)*(1 + x) - 90*Power(E,2*x)*(1 - 2*Power(x,2) + \
+Power(x,3)) - 
+        21*Power(E,1 + 2*x + Power(x,2)/2. + 2*y)*
+         (1 - Power(x,2) + 5*Power(x,3) + 5*x*(-2 + Power(y,4)))))/15.,
+   (2*Power(E,-Power(1 + x,2) - Power(y,2))*y)/3. + 
+    28*Power(E,-Power(x,2)/2. - Power(y,2))*Power(y,3) - 
+    6*Power(E,-Power(x,2) - Power(1 + y,2))*Power(-1 + x,2)*(1 + y) - 
+    (14*Power(E,-Power(x,2)/2. - Power(y,2))*y*(-x + 5*Power(x,2) + \
+5*Power(y,4)))/5.)\
+\>", "Output",
+ CellChangeTimes->{3.69923473437577*^9, 3.699282704864623*^9}]
+}, Open  ]]
+},
+WindowSize->{960, 1028},
+WindowMargins->{{Automatic, 950}, {Automatic, -10}},
+FrontEndVersion->"9.0 for Linux x86 (64-bit) (February 7, 2013)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[579, 22, 207, 4, 42, "WolframAlphaLong"],
+Cell[789, 28, 23676, 518, 473, "Print"]
+}, Open  ]],
+Cell[24480, 549, 1142, 38, 55, "Input"],
+Cell[CellGroupData[{
+Cell[25647, 591, 330, 9, 32, "Input"],
+Cell[25980, 602, 2841, 89, 84, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[28858, 696, 222, 4, 32, "Input"],
+Cell[29083, 702, 626, 14, 140, "Output"]
+}, Open  ]],
+Cell[29724, 719, 1195, 40, 55, "Input"],
+Cell[CellGroupData[{
+Cell[30944, 763, 377, 10, 32, "Input"],
+Cell[31324, 775, 2986, 93, 96, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[34347, 873, 176, 3, 32, "Input"],
+Cell[34526, 878, 619, 12, 174, "Output"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)

@@ -1,0 +1,7 @@
+julia 0.6
+POMDPs
+StaticArrays
+ParticleFilters
+Plots
+Parameters
+POMDPToolbox
