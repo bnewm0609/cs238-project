@@ -29,8 +29,6 @@ mutable struct Rectangle
     function Rectangle(
         corners::Array{Float64, 2},
         walls::Array{Bool, 1};
-        goal_idx::Int=0,
-        stair_idx::Int=0
         )
 
         retval = new()
@@ -42,7 +40,7 @@ mutable struct Rectangle
         retval.height = corners[2, 2] - corners[1, 2]
         mean_vals = mean(corners, dims=1)
         retval.midpoint = SVector(mean_vals[1, 1], mean_vals[1, 2])
-        
+
         # compute area in which robot could be initialized
         retval.xl = corners[2, 1]
         retval.xu = corners[3, 1]
@@ -66,10 +64,10 @@ mutable struct Rectangle
         end
         @assert retval.width > 0.0 && retval.height > 0.0 "Negative width or height"
         retval.area = retval.width * retval.height
-        
-        retval.segments = [LineSegment(corners[i, :], corners[i+1, :], (goal_idx == i), (stair_idx == i)) for i =1:3 if walls[i]]
+
+        retval.segments = [LineSegment(corners[i, :], corners[i+1, :]) for i = 1:3]
         if walls[4]
-            push!(retval.segments, LineSegment(corners[1, :], corners[4, :], (goal_idx == 4), (stair_idx == 4)))
+            push!(retval.segments, LineSegment(corners[1, :], corners[4, :]))
         end
 
         retval
@@ -81,7 +79,7 @@ function init_pos(rect::Rectangle, rng)
     w = rect.xu - rect.xl
     h = rect.yu - rect.yl
     init_pos = SVector(rand(rng)*w + rect.xl, rand(rng)*h + rect.yl)
-    
+
     init_pos
 end
 
@@ -146,7 +144,7 @@ function furthest_step(rect::Rectangle, pos::AbstractVector{Float64}, heading::A
     return minimum(furthest_step(seg, pos, heading, ROBOT_W/2) for seg in rect.segments)
 end
 
-# computes the length of a ray from robot center to closest segment 
+# computes the length of a ray from robot center to closest segment
 # from p0 pointing in direction heading
 function ray_length(rect::Rectangle, pos::AbstractVector{Float64}, heading::AbstractVector{Float64})
     return minimum(ray_length(seg, pos, heading) for seg in rect.segments)
@@ -165,63 +163,22 @@ end
 mutable struct Room
     rectangles::Array{Rectangle, 1}
     areas::Array{Float64, 1}
-    goal_rect::Int  # Index of rectangle with goal state
-    goal_wall::Int  # Index of wall that leads to goal
-    stair_rect::Int # Index of rectangle with stairs
-    stair_wall::Int # Index of wall that leads to stairs
 
     function Room(; configuration=1)
 
         retval = new()
 
-        # Define different configurations for stair and goal locations
-        goal_idxs = [0, 0, 0, 0]
-        stair_idxs = [0, 0, 0, 0]
-        if configuration == 2
-            retval.goal_rect = 1
-            retval.goal_wall = 4
-            retval.stair_rect = 2
-            retval.stair_wall = 1
-        elseif configuration == 3
-            retval.goal_rect = 4
-            retval.goal_wall = 3
-            retval.stair_rect = 2
-            retval.stair_wall = 1
-        else
-            retval.goal_rect = 4
-            retval.goal_wall = 3
-            retval.stair_rect = 4
-            retval.stair_wall = 4
-        end
-        goal_idxs[retval.goal_rect] = retval.goal_wall
-        stair_idxs[retval.stair_rect] = retval.stair_wall
-
         # Initialize array of rectangles
         rectangles = []
 
         # Rectangle 1
-        corners = [[-20-RW -20]; [-20-RW 0-RW]; [-20+RW 0-RW]; [-20+RW -20]]
-        walls = [true, false, true, true] # top wall shared
-        push!(rectangles, Rectangle(corners, walls, goal_idx=goal_idxs[1], stair_idx=stair_idxs[1]))
-
-        # Rectangle 2
-        corners = [[-20-RW 0-RW]; [-20-RW 0+RW]; [-20+RW 0+RW]; [-20+RW 0-RW]]
-        walls = [true, true, false, false] # bottom, right wall shared
-        push!(rectangles, Rectangle(corners, walls, goal_idx=goal_idxs[2], stair_idx=stair_idxs[2]))
-
-        # Rectangle 3
-        corners = [[-20+RW 0-RW]; [-20+RW 0+RW]; [10 0+RW]; [10 0-RW]]
-        walls = [false, true, false, true] # left wall shared
-        push!(rectangles, Rectangle(corners, walls, goal_idx=goal_idxs[3], stair_idx=stair_idxs[3]))
-
-        # Rectangle 4
-        corners = [[10 0-RW]; [10 0+RW]; [10+RW 0+RW]; [10+RW 0-RW]]
-        walls = [false, true, true, true] # left wall shared
-        push!(rectangles, Rectangle(corners, walls, goal_idx=goal_idxs[4], stair_idx=stair_idxs[4]))
+        corners = [[-20-RW -20-RW]; [-20-RW 0+RW]; [10+RW 0+RW]; [10+RW -20-RW]]
+        walls = [true, true, true, true] # top wall shared
+        push!(rectangles, Rectangle(corners, walls))
 
         retval.rectangles = rectangles
         retval.areas = [r.area for r in rectangles]
-        
+
         retval
     end
 end
@@ -261,12 +218,12 @@ end
 function contact_wall(r::Rectangle, wall::Int, pos::Array{Float64, 1})
     wc,_ = wall_contact(r, pos)
     return wc == wall
-end    
+end
 
 # Determines if pos (center of robot) is within the room
 function in_room(r::Room, pos::AbstractVector{Float64})
     return any([in_rectangle(rect, pos) for rect in r.rectangles])
-end 
+end
 
 # Attempts to translate from pos0 in direction heading for des_step without violating boundaries
 function legal_translate(r::Room, pos0::AbstractVector{Float64}, heading::AbstractVector{Float64}, des_step::Float64)
