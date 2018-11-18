@@ -64,7 +64,7 @@ Define the Roomba MDP.
     v_max::Float64  = 10.0  # m/s
     om_max::Float64 = 1.0   # rad/s
     dt::Float64     = 0.5   # s
-    contact_pen::Float64 = -1.0 
+    contact_pen::Float64 = -1.0
     time_pen::Float64 = -0.1
     goal_reward::Float64 = 10
     stairs_penalty::Float64 = -10
@@ -104,7 +104,7 @@ function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int, num_theta_pts:
     # hardcoded room-limits
     # watch for consistency with env_room
     XLIMS = [-30.0, 20.0]
-    YLIMS = [-30.0, 10.0] 
+    YLIMS = [-30.0, 10.0]
 
     return DiscreteRoombaStateSpace((XLIMS[2]-XLIMS[1])/(num_x_pts-1),
                                     (YLIMS[2]-YLIMS[1])/(num_y_pts-1),
@@ -132,7 +132,7 @@ struct Bumper end
 POMDPs.obstype(::Type{Bumper}) = Bool
 POMDPs.obstype(::Bumper) = Bool
 
-struct Lidar 
+struct Lidar
     ray_stdev::Float64 # measurement noise: see POMDPs.observation definition
                        # below for usage
 end
@@ -150,6 +150,20 @@ POMDPs.obstype(::Type{DiscreteLidar}) = Int
 POMDPs.obstype(::DiscreteLidar) = Int
 DiscreteLidar(disc_points) = DiscreteLidar(Lidar().ray_stdev, disc_points)
 
+struct Command
+	dirs::Array{Tuple{Int64,Tuple{Float64,Float64}},1}
+end
+# commands are not noisy - they are completely deterministic
+# the first value is the action, the second is the tuple (upper bound, lower bound)
+# in the observation function the calculated theta has to be less than upper bound
+# and greater than or equal to lower bound
+Command = Command([(1, (-3*pi/4, 3*pi/4)), (2, (-pi/4, -3*pi/4)),
+					(3, (pi/4, -pi/4)), (4, (3*pi/4, pi/4))])
+
+
+POMDPs.obstype(::Type{Command}) = Int # 1, 2, 3, 4 for left, down, right, up
+POMDPs.obstype(::Command) = Int
+
 
 
 # Shorthands
@@ -157,6 +171,7 @@ const RoombaModel = Union{RoombaMDP, RoombaPOMDP}
 const BumperPOMDP = RoombaPOMDP{Bumper, Bool}
 const LidarPOMDP = RoombaPOMDP{Lidar, Float64}
 const DiscreteLidarPOMDP = RoombaPOMDP{DiscreteLidar, Int}
+const CommandPOMDP = RoombaPOMDP{Command, Int}
 
 # access the mdp of a RoombaModel
 mdp(e::RoombaMDP) = e
@@ -211,7 +226,7 @@ function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
         is = index_to_state(m, isi)
     end
 
-    return is 
+    return is
 end
 
 # transition Roomba state given curent state and action
@@ -276,7 +291,7 @@ end
 function POMDPs.n_states(m::RoombaModel)
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         ss = mdp(m).sspace
-        nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1, 
+        nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
                             round(Int, 2*pi/ss.th_step)+1,
                             3))
@@ -295,7 +310,7 @@ function POMDPs.stateindex(m::RoombaModel, s::RoombaState)
         thind = floor(Int, (s[3] - (-pi)) / ss.th_step + 0.5) + 1
         stind = convert(Int, s[4] + 2)
 
-        lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1, 
+        lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
                             round(Int, 2*pi/ss.th_step)+1,
                             3))
@@ -309,7 +324,7 @@ end
 function index_to_state(m::RoombaModel, si::Int)
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         ss = mdp(m).sspace
-        lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1, 
+        lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
                             round(Int, 2*pi/ss.th_step)+1,
                             3))
@@ -331,10 +346,10 @@ end
 
 # defines reward function R(s,a,s')
 function POMDPs.reward(m::RoombaModel,
-                s::AbstractVector{Float64}, 
+                s::AbstractVector{Float64},
                 a::AbstractVector{Float64},
                 sp::AbstractVector{Float64})
-    
+
     # penalty for each timestep elapsed
     cum_reward = mdp(m).time_pen
 
@@ -349,14 +364,14 @@ function POMDPs.reward(m::RoombaModel,
     cum_reward += mdp(m).goal_reward*(sp.status == 1.0)
     cum_reward += mdp(m).stairs_penalty*(sp.status == -1.0)
 
-    return cum_reward  
+    return cum_reward
 end
 
 # determine if a terminal state has been reached
 POMDPs.isterminal(m::RoombaModel, s::AbstractVector{Float64}) = abs(s.status) > 0.0
 
 # Bumper POMDP observation
-function POMDPs.observation(m::BumperPOMDP, 
+function POMDPs.observation(m::BumperPOMDP,
                             a::AbstractVector{Float64},
                             sp::AbstractVector{Float64})
     return Deterministic(wall_contact(m, sp)) # in {0.0,1.0}
@@ -366,7 +381,7 @@ POMDPs.n_observations(m::BumperPOMDP) = 2
 POMDPs.observations(m::BumperPOMDP) = [false, true]
 
 # Lidar POMDP observation
-function POMDPs.observation(m::LidarPOMDP, 
+function POMDPs.observation(m::LidarPOMDP,
                             a::AbstractVector{Float64},
                             sp::AbstractVector{Float64})
     x, y, th = sp
@@ -390,10 +405,10 @@ function POMDPs.observations(m::LidarPOMDP)
 end
 
 # DiscreteLidar POMDP observation
-function POMDPs.observation(m::DiscreteLidarPOMDP, 
+function POMDPs.observation(m::DiscreteLidarPOMDP,
                             a::AbstractVector{Float64},
                             sp::AbstractVector{Float64})
-    
+
     m_lidar = LidarPOMDP(Lidar(m.sensor.ray_stdev), mdp(m))
 
     d = observation(m_lidar, a, sp)
@@ -407,7 +422,35 @@ end
 
 POMDPs.n_observations(m::DiscreteLidarPOMDP) = length(m.sensor.disc_points) + 1
 POMDPs.observations(m::DiscreteLidarPOMDP) = vec(1:n_observations(m))
-                        
+
+# new stuff
+POMDPs.observation(m::CommandPOMDP,
+				   a::AbstractVector{Float64},
+				   sp::AbstractVector{Float64})
+				   )
+	# basically what we have to do is get the direction to the room and then
+	# use some tie-breaking scheme to decide what to return
+	x, y = sp # assume that the first two elements of the state are x, y
+			  # (In Julia, you only have to unpack the first n elemenst of tuples)
+	gx, xy = get_goal_xy(m)
+
+	# calculate angle to goal using arctan - returns an angle between -pi and pi
+	# Awesome note: in Julia you can type "pi" and get the value of pi....
+	th_goal = atan(gx - x, gy - y)
+
+	# choose action - note that there is a very explici tie-break assumption
+	# here - we are choosing randomly
+	dirs = Random.shuffle(m.sensor.dirs)
+	for (a, dir) in dirs
+		if th_goal <= dir[1] and th_goal > dirs[2]
+			return a
+		end
+	end
+	@assert false # we shouldn't get here
+end
+POMDPS.n_observations(m::CommandPOMDP) = length(m.sensor.dirs)
+POMDPS.observations(m::CommandPOMDP) = vec(1:4)
+
 # define discount factor
 POMDPs.discount(m::RoombaModel) = 0.95
 
