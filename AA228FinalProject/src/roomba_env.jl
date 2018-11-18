@@ -157,8 +157,10 @@ end
 # the first value is the action, the second is the tuple (upper bound, lower bound)
 # in the observation function the calculated theta has to be less than upper bound
 # and greater than or equal to lower bound
-Command = Command([(1, (-3*pi/4, 3*pi/4)), (2, (-pi/4, -3*pi/4)),
-					(3, (pi/4, -pi/4)), (4, (3*pi/4, pi/4))])
+# Note: the bounds for 1 might look reversed, but that's to handle wrapping. It
+# The case is handled correctly in the POMDPs.observation function
+Command = Command([(1, (-3pi/4, 3pi/4)), (2, (-pi/4, -3pi/4)),
+					(3, (pi/4, -pi/4)), (4, (3pi/4, pi/4))])
 
 
 POMDPs.obstype(::Type{Command}) = Int # 1, 2, 3, 4 for left, down, right, up
@@ -441,8 +443,13 @@ POMDPs.observation(m::CommandPOMDP,
 	# choose action - note that there is a very explici tie-break assumption
 	# here - we are choosing randomly
 	dirs = Random.shuffle(m.sensor.dirs)
+
 	for (a, dir) in dirs
-		if th_goal <= dir[1] and th_goal > dirs[2]
+		if a == 1 # because of wrapping, we need to handle this case differently
+			if th_goal <= dir[1] || th_goal > dir[2]
+				return a
+			end
+		elseif th_goal <= dir[1] && th_goal > dir[2]
 			return a
 		end
 	end
