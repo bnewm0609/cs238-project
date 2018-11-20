@@ -25,7 +25,7 @@ Fields:
 """
 mutable struct RoombaParticleFilter <: POMDPs.Updater
     spf::SimpleParticleFilter
-    theta_noise_coeff::Float64
+    theta_noise_coefficient::Float64
 end
 
 function ParticleFilters.resample(cr::CommandResampler, b::WeightedParticleBelief{RoombaState}, rng::AbstractRNG)
@@ -40,7 +40,7 @@ function ParticleFilters.resample(cr::CommandResampler, b::WeightedParticleBelie
     if isempty(new) # no particles consistent with observations
         return ParticleCollection(particles(b))
     end
-    extras = rand(rng, new, br.n-length(new))
+    extras = rand(rng, new, cr.n-length(new))
     for p in extras
         push!(new, p)
     end
@@ -68,7 +68,7 @@ function ParticleFilters.resample(br::BumperResampler, b::WeightedParticleBelief
 end
 
 # resample function for unweighted particles
-function ParticleFilters.resample(br::Union{BumperResampler,LidarResampler}, b, rng::AbstractRNG)
+function ParticleFilters.resample(br::Union{BumperResampler,LidarResampler,CommandResampler}, b, rng::AbstractRNG)
     ps = Array{RoombaState}(undef, br.n)
     for i in 1:br.n
         ps[i] = rand(rng, b)
@@ -98,7 +98,7 @@ function POMDPs.update(up::RoombaParticleFilter, b::ParticleCollection{RoombaSta
         if !isterminal(up.spf.model, s)
             all_terminal = false
             # noise added here:
-            a_pert = a + SVector(up.theta_noise_coeff*(rand(up.spf.rng)-0.5))
+            a_pert = a + SVector(up.theta_noise_coefficient*(rand(up.spf.rng)-0.5))
             sp = generate_s(up.spf.model, s, a_pert, up.spf.rng)
             push!(pm, sp)
             push!(wm, obs_weight(up.spf.model, s, a_pert, sp, o))

@@ -26,20 +26,20 @@ using Gtk
 using Random
 using Printf
 
-sensor = Bumper() # or Bumper() for the bumper version of the environment
+sensor = Command() # or Bumper() for the bumper version of the environment
 m = RoombaPOMDP(sensor=sensor, mdp=RoombaMDP());
 
 num_particles = 2000
 # resampler = LidarResampler(num_particles, LowVarianceResampler(num_particles))
-# resampler = CommandResampler(num_particles)
+# resampler = BumperResampler(num_particles)
 # for the bumper environment
-resampler = BumperResampler(num_particles)
+resampler = CommandResampler(num_particles)
 
 spf = SimpleParticleFilter(m, resampler)
 
-theta_noise_coefficient = 0.1
+theta_noise_coeff = 0.1
 
-belief_updater = RoombaParticleFilter(spf, theta_noise_coefficient);
+belief_updater = RoombaParticleFilter(spf, theta_noise_coeff);
 
 # Define the policy to test
 mutable struct ToEnd <: Policy
@@ -71,7 +71,7 @@ function POMDPs.action(p::ToEnd, b::ParticleCollection{RoombaState})
     goal_x, goal_y = goal_xy
     x,y = s
     ang_to_goal = atan(goal_y - y, goal_x - x)
-    del_angle = wrap_to_pi(ang_to_goal - th)
+    del_angle = wrap_to_pi(ang_to_goal)
 
     return RoombaAct(del_angle)
 end
@@ -86,13 +86,11 @@ p = ToEnd(0) # here, the argument sets the time-steps elapsed to 0
 c = @GtkCanvas()
 win = GtkWindow(c, "Roomba Environment", 600, 600)
 
-######
-dist = initialstate_distribution(m)
-is = RoombaState(x=4., y=4., status= 0.0)
-b0 = initialize_belief(belief_updater, dist)
-######
+# is = RoombaState(x=-5.,y=-10.,status=0.0)
+# dist = initialstate_distribution(m)
+# b0 = initialize_belief(belief_updater, dist)
 
-for (t, step) in enumerate(stepthrough(m, p, belief_updater, b0, is, max_steps=100))
+for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=100))
     @guarded draw(c) do widget
 
         # the following lines render the room, the particles, and the roomba
@@ -126,3 +124,27 @@ for exp = 1:5
 end
 
 @printf("Mean Total Reward: %.3f, StdErr Total Reward: %.3f", mean(total_rewards), std(total_rewards)/sqrt(5))
+
+
+#############
+
+using POMDPModels, BasicPOMCP
+solver = POMCPSolver()
+planner = solve(solver, m)
+
+for (s, a, o) in stepthrough(m, planner, "sao", max_steps=100)
+    println("State was $s,")
+    println("action $a was taken,")
+    println("and observation $o was received.\n")
+end
+
+for exp = 1:5
+    println(string(exp))
+
+    Random.seed!(exp)
+
+    p = ToEnd(0)
+    traj_rewards = sum([step.r for step in stepthrough(m,planner, max_steps=100)])
+
+    push!(total_rewards, traj_rewards)
+end

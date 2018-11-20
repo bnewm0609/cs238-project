@@ -63,7 +63,7 @@ Define the Roomba MDP.
 - `aspace::AS` environment action-space struct
 """
 @with_kw mutable struct RoombaMDP{SS,AS} <: MDP{RoombaState, RoombaAct}
-    v::Float64  = 1.0  # m/s
+    v::Float64  = 0.5  # m/s
     dt::Float64     = 0.5   # s
     contact_pen::Float64 = -1.0
     time_pen::Float64 = -0.1
@@ -209,7 +209,7 @@ end
 
 function at_goal(x, y, m::RoombaModel)
     goal_x, goal_y = get_goal_pos(m)
-	return (x == goal_x) && (y == goal_y) # TODO: Include a buffer
+	return (abs(x - goal_x) < .2) && abs(y - goal_y) < .2 # TODO: Make a more robust buffer
 end
 
 # initializes x,y of Roomba in the room
@@ -221,7 +221,11 @@ function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
 	# cmd_3 = rand() * 2*pi - pi
 	# cmd_4 = rand() * 2*pi - pi
 
-	@assert !at_goal(x,y,m) # init_pos shouldn't start at the goal state
+	while(at_goal(x,y,m))
+		println("Goal pos: $(get_goal_pos(m)); Init pos: ($x, $y)")
+		x, y = init_pos(e.room, rng)
+	end
+
     is = RoombaState(x=x, y=y, status=0.0)
 	# is = RoombaState(x=x, y=y, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4 status=0.0)
 
@@ -239,13 +243,13 @@ function POMDPs.transition(m::RoombaModel,
                            a::AbstractVector{Float64})
 
     e = mdp(m)
-    theta = a
+    theta = a[1]
     theta = wrap_to_pi(theta)
 
     # propagate dynamics without wall considerations
     x, y = s
     dt = e.dt
-	  v = e.v
+	v = e.v
 
     # make sure we arent going through a wall
     p0 = SVector(x, y)
@@ -325,7 +329,8 @@ function POMDPs.stateindex(m::RoombaModel, s::RoombaState)
 		  #                     round(Int, 2*pi/ss.cmd_step)+1,
 		  #                     round(Int, 2*pi/ss.cmd_step)+1,
 	    #                     2))
-        return lin[xind,yind,stind,cmd1ind,cmd2ind,cmd3ind,cmd4ind]
+		return lin[xind,yind,stind]
+        # return lin[xind,yind,stind,cmd1ind,cmd2ind,cmd3ind,cmd4ind]  # For Modified Problem
     else
         error("State-space must be DiscreteRoombaStateSpace.")
     end
@@ -452,7 +457,7 @@ function POMDPs.observation(m::CommandPOMDP,
 	# use some tie-breaking scheme to decide what to return
 	x, y = sp # assume that the first two elements of the state are x, y
 			  # (In Julia, you only have to unpack the first n elemenst of tuples)
-	gx, xy = get_goal_pos(m)
+	gx, gy = get_goal_pos(m)
 
 	# calculate angle to goal using arctan - returns an angle between -pi and pi
 	# Awesome note: in Julia you can type "pi" and get the value of pi....
@@ -465,10 +470,10 @@ function POMDPs.observation(m::CommandPOMDP,
 	for (a, dir) in dirs
 		if a == 1 # because of wrapping, we need to handle this case differently
 			if th_goal <= dir[1] || th_goal > dir[2]
-				return a
+				return Deterministic(a)
 			end
 		elseif th_goal <= dir[1] && th_goal > dir[2]
-			return a
+			return Deterministic(a)
 		end
 	end
 	@assert false # we shouldn't get here
