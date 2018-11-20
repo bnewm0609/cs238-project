@@ -13,17 +13,38 @@ struct LidarResampler
     lvr::LowVarianceResampler
 end
 
+struct CommandResampler
+    n::Int
+end
+
 """
 Definition of the particle filter for the Roomba environment
 Fields:
 - `spf::SimpleParticleFilter` standard particle filter struct defined in ParticleFilters.jl
-- `v_noise_coeff::Float64` coefficient to scale particle-propagation noise in velocity
-- `om_noise_coeff::Float64`coefficient to scale particle-propagation noise in turn-rate
+- `theta_noise_coeff::Float64` coefficient to scale particle-propagation noise in theta
 """
 mutable struct RoombaParticleFilter <: POMDPs.Updater
     spf::SimpleParticleFilter
-    v_noise_coeff::Float64
-    om_noise_coeff::Float64
+    theta_noise_coeff::Float64
+end
+
+function ParticleFilters.resample(cr::CommandResampler, b::WeightedParticleBelief{RoombaState}, rng::AbstractRNG)
+    new = RoombaState[]
+    for (p, w) in weighted_particles(b)
+        if w == 1.0
+            push!(new, p)
+        else
+            @assert w == 0
+        end
+    end
+    if isempty(new) # no particles consistent with observations
+        return ParticleCollection(particles(b))
+    end
+    extras = rand(rng, new, br.n-length(new))
+    for p in extras
+        push!(new, p)
+    end
+    return ParticleCollection(new)
 end
 
 # Resample function for weights in {0,1} necessary for bumper sensor
@@ -77,7 +98,7 @@ function POMDPs.update(up::RoombaParticleFilter, b::ParticleCollection{RoombaSta
         if !isterminal(up.spf.model, s)
             all_terminal = false
             # noise added here:
-            a_pert = a + SVector(up.v_noise_coeff*(rand(up.spf.rng)-0.5), up.om_noise_coeff*(rand(up.spf.rng)-0.5))
+            a_pert = a + SVector(up.theta_noise_coeff*(rand(up.spf.rng)-0.5))
             sp = generate_s(up.spf.model, s, a_pert, up.spf.rng)
             push!(pm, sp)
             push!(wm, obs_weight(up.spf.model, s, a_pert, sp, o))

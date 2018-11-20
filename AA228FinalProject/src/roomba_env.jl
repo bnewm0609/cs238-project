@@ -23,7 +23,7 @@ State of a Roomba.
 - `cmd_4::Float64`: mapping for command 4 in radians
 - `status::Float64` indicator whether robot has reached goal state
 """
-@withkw struct RoombaState <: FieldVector{7, Float64}
+@with_kw struct RoombaState <: FieldVector{7, Float64}
     x::Float64
     y::Float64
 	status::Float64
@@ -68,8 +68,7 @@ Define the Roomba MDP.
     contact_pen::Float64 = -1.0
     time_pen::Float64 = -0.1
     goal_reward::Float64 = 10
-    config::Int = 1
-    room::Room  = Room(configuration=config)
+    room::Room  = Room()
     sspace::SS = ContinuousRoombaStateSpace()
     aspace::AS = RoombaActions()
     _amap::Union{Nothing, Dict{RoombaAct, Int}} = gen_amap(aspace)
@@ -160,7 +159,7 @@ end
 # and greater than or equal to lower bound
 # Note: the bounds for 1 might look reversed, but that's to handle wrapping. It
 # The case is handled correctly in the POMDPs.observation function
-Command = Command([(1, (-3pi/4, 3pi/4)), (2, (-pi/4, -3pi/4)),
+Command() = Command([(1, (-3pi/4, 3pi/4)), (2, (-pi/4, -3pi/4)),
 					(3, (pi/4, -pi/4)), (4, (3pi/4, pi/4))])
 
 
@@ -208,6 +207,11 @@ function get_goal_pos(m::RoombaModel)
     return mdp(m).room.goal_pos
 end
 
+function at_goal(x, y, m::RoombaModel)
+    goal_x, goal_y = get_goal_pos(m)
+	return (x == goal_x) && (y == goal_y) # TODO: Include a buffer
+end
+
 # initializes x,y of Roomba in the room
 function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
     e = mdp(m)
@@ -217,7 +221,7 @@ function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
 	# cmd_3 = rand() * 2*pi - pi
 	# cmd_4 = rand() * 2*pi - pi
 
-	assert !at_goal(x,y) #init_pos shouldn't start at the goal state
+	@assert !at_goal(x,y,m) # init_pos shouldn't start at the goal state
     is = RoombaState(x=x, y=y, status=0.0)
 	# is = RoombaState(x=x, y=y, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4 status=0.0)
 
@@ -250,7 +254,7 @@ function POMDPs.transition(m::RoombaModel,
     next_x, next_y = legal_translate(e.room, p0, heading, des_step)
 
     # Determine whether goal has been reached
-    next_status = 1.0*at_goal(next_x, next_y)
+    next_status = 1.0*at_goal(next_x, next_y, m)
 
     # define next state
     sp = RoombaState(x=next_x, y=next_y, status=next_status)
@@ -441,10 +445,9 @@ POMDPs.observations(m::DiscreteLidarPOMDP) = vec(1:n_observations(m))
 
 
 # new stuff
-POMDPs.observation(m::CommandPOMDP,
+function POMDPs.observation(m::CommandPOMDP,
 				   a::AbstractVector{Float64},
 				   sp::AbstractVector{Float64})
-				   )
 	# basically what we have to do is get the direction to the room and then
 	# use some tie-breaking scheme to decide what to return
 	x, y = sp # assume that the first two elements of the state are x, y
@@ -470,8 +473,8 @@ POMDPs.observation(m::CommandPOMDP,
 	end
 	@assert false # we shouldn't get here
 end
-POMDPS.n_observations(m::CommandPOMDP) = length(m.sensor.dirs)
-POMDPS.observations(m::CommandPOMDP) = vec(1:4)
+POMDPs.n_observations(m::CommandPOMDP) = length(m.sensor.dirs)
+POMDPs.observations(m::CommandPOMDP) = vec(1:4)
 
 # define discount factor
 POMDPs.discount(m::RoombaModel) = 0.95
