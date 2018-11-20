@@ -17,20 +17,25 @@ State of a Roomba.
 # Fields
 - `x::Float64` x location in meters
 - `y::Float64` y location in meters
-- `theta::Float64` orientation in radians
-- `status::Bool` indicator whether robot has reached goal state
+- `cmd_1::Float64`: mapping for command 1 in radians
+- `cmd_2::Float64`: mapping for command 2 in radians
+- `cmd_3::Float64`: mapping for command 3 in radians
+- `cmd_4::Float64`: mapping for command 4 in radians
+- `status::Float64` indicator whether robot has reached goal state
 """
-struct RoombaState <: FieldVector{4, Float64}
+@withkw struct RoombaState <: FieldVector{7, Float64}
     x::Float64
     y::Float64
-    theta::Float64
-    status::Float64
+	status::Float64
+	cmd_1::Float64 = pi # angles are (-pi to pi]
+	cmd_2::Float64 = -pi/2
+	cmd_3::Float64 = 0.
+	cmd_4::Float64 = pi/2
 end
 
 # Struct for a Roomba action
-struct RoombaAct <: FieldVector{2, Float64}
-    v::Float64     # meters per second
-    omega::Float64 # theta dot (rad/s)
+struct RoombaAct <: FieldVector{1, Float64}
+    theta::Float64     # direction of movement
 end
 
 # action spaces
@@ -48,25 +53,21 @@ end
 Define the Roomba MDP.
 
 # Fields
-- `v_max::Float64` maximum velocity of Roomba [m/s]
-- `om_max::Float64` maximum turn-rate of Roombda [rad/s]
+- `v::Float64` constant velocity of Roomba [m/s]
 - `dt::Float64` simulation time-step [s]
 - `contact_pen::Float64` penalty for wall-contact
 - `time_pen::Float64` penalty per time-step
 - `goal_reward::Float64` reward for reaching goal
-- `config::Int` specifies room configuration (location of stairs/goal) {1,2,3}
 - `room::Room` environment room struct
 - `sspace::SS` environment state-space (ContinuousRoombaStateSpace or DiscreteRoombaStateSpace)
 - `aspace::AS` environment action-space struct
 """
 @with_kw mutable struct RoombaMDP{SS,AS} <: MDP{RoombaState, RoombaAct}
-    v_max::Float64  = 10.0  # m/s
-    om_max::Float64 = 1.0   # rad/s
+    v::Float64  = 1.0  # m/s
     dt::Float64     = 0.5   # s
     contact_pen::Float64 = -1.0
     time_pen::Float64 = -0.1
     goal_reward::Float64 = 10
-#     stairs_penalty::Float64 = -10
     config::Int = 1
     room::Room  = Room(configuration=config)
     sspace::SS = ContinuousRoombaStateSpace()
@@ -81,7 +82,7 @@ struct ContinuousRoombaStateSpace end
 Specify a DiscreteRoombaStateSpace
 - `x_step::Float64` distance between discretized points in x
 - `y_step::Float64` distance between discretized points in y
-- `th_step::Float64` distance between discretized points in theta
+#- `cmd_step::Float64` distance between discretized points in command mappings # For Modified Problem
 - `XLIMS::Vector` boundaries of room (x-dimension)
 - `YLIMS::Vector` boundaries of room (y-dimension)
 
@@ -89,16 +90,17 @@ Specify a DiscreteRoombaStateSpace
 struct DiscreteRoombaStateSpace
     x_step::Float64
     y_step::Float64
-    th_step::Float64
+    # cmd_step::Float64  # For Modified Problem
     XLIMS::Vector
     YLIMS::Vector
 end
 
 # function to construct DiscreteRoombaStateSpace:
 # `num_x_pts::Int` number of points to discretize x range to
-# `num_y_pts::Int` number of points to discretize yrange to
-# `num_th_pts::Int` number of points to discretize th range to
-function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int, num_theta_pts::Int)
+# `num_y_pts::Int` number of points to discretize y range to
+## `num_cmd_pts::Int` number of points to discretize command mapping range to # For Modified Problem
+function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int)
+# function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int, num_cmd_pts::Int) # For Modified Problem
 
     # hardcoded room-limits
     # watch for consistency with env_room
@@ -107,7 +109,7 @@ function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int, num_theta_pts:
 
     return DiscreteRoombaStateSpace((XLIMS[2]-XLIMS[1])/(num_x_pts-1),
                                     (YLIMS[2]-YLIMS[1])/(num_y_pts-1),
-                                    2*pi/(num_theta_pts-1),
+#                                    2*pi/(num_cmd_pts-1),  # For Modified Problem
                                     XLIMS,YLIMS)
 end
 
@@ -202,26 +204,22 @@ function POMDPs.actionindex(m::RoombaModel, a::RoombaAct)
 end
 
 # function to get goal xy location for heuristic controllers
-function get_goal_xy(m::RoombaModel)
+function get_goal_pos(m::RoombaModel)
     return mdp(m).room.goal_pos
-#     grn = mdp(m).room.goal_rect
-#     gwn = mdp(m).room.goal_wall
-#     gr = mdp(m).room.rectangles[grn]
-#     corners = gr.corners
-#     if gwn == 4
-#         return (corners[1,:] + corners[4,:]) / 2.
-#     else
-#         return (corners[gwn,:] + corners[gwn+1,:]) / 2.
-#     end
 end
 
-# initializes x,y,th of Roomba in the room
+# initializes x,y of Roomba in the room
 function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
     e = mdp(m)
     x, y = init_pos(e.room, rng)
-    th = rand() * 2*pi - pi
+	# cmd_1 = rand() * 2*pi - pi
+	# cmd_2 = rand() * 2*pi - pi
+	# cmd_3 = rand() * 2*pi - pi
+	# cmd_4 = rand() * 2*pi - pi
 
-    is = RoombaState(x, y, th, 0.0)
+	assert !at_goal(x,y) #init_pos shouldn't start at the goal state
+    is = RoombaState(x=x, y=y, status=0.0)
+	# is = RoombaState(x=x, y=y, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4 status=0.0)
 
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         isi = stateindex(m, is)
@@ -237,39 +235,25 @@ function POMDPs.transition(m::RoombaModel,
                            a::AbstractVector{Float64})
 
     e = mdp(m)
-    v, om = a
-    v = clamp(v, 0.0, e.v_max)
-    om = clamp(om, -e.om_max, e.om_max)
+    theta = a
+    theta = wrap_to_pi(theta)
 
     # propagate dynamics without wall considerations
-    x, y, th, _ = s
+    x, y = s
     dt = e.dt
-
-    # dynamics assume robot rotates and then translates
-    next_th = wrap_to_pi(th + om*dt)
+	  v = e.v
 
     # make sure we arent going through a wall
     p0 = SVector(x, y)
-    heading = SVector(cos(next_th), sin(next_th))
+    heading = SVector(cos(theta), sin(theta))
     des_step = v*dt
     next_x, next_y = legal_translate(e.room, p0, heading, des_step)
 
-    # Determine whether goal state has been reached
-    res = false
-    if SVector(next_x, next_y) == e.room.goal_pos
-        res = true
-    end
-    next_status = 1.0*res
-    # grn = mdp(m).room.goal_rect
-    # gwn = mdp(m).room.goal_wall
-    # srn = mdp(m).room.stair_rect
-    # swn = mdp(m).room.stair_wall
-    # gr = mdp(m).room.rectangles[grn]
-    # sr = mdp(m).room.rectangles[srn]
-    # next_status = 1.0*contact_wall(gr, gwn, [next_x, next_y]) - 1.0*contact_wall(sr, swn, [next_x, next_y])
+    # Determine whether goal has been reached
+    next_status = 1.0*at_goal(next_x, next_y)
 
     # define next state
-    sp = RoombaState(next_x, next_y, next_th, next_status)
+    sp = RoombaState(x=next_x, y=next_y, status=next_status)
 
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         # round the states to nearest grid point
@@ -286,9 +270,10 @@ function POMDPs.states(m::RoombaModel)
         ss = mdp(m).sspace
         x_states = range(ss.XLIMS[1], stop=ss.XLIMS[2], step=ss.x_step)
         y_states = range(ss.YLIMS[1], stop=ss.YLIMS[2], step=ss.y_step)
-        th_states = range(-pi, stop=pi, step=ss.th_step)
-        statuses = [-1.,0.,1.]
-        return vec(collect(RoombaState(x,y,th,st) for x in x_states, y in y_states, th in th_states, st in statuses))
+        # cmd_states = range(-pi, stop=pi, step=ss.cmd_step)  # For Modified Problem
+        statuses = [0.,1.]
+        return vec(collect(RoombaState(x=x,y=y,status=st) for x in x_states, y in y_states, st in statuses))
+        # return vec(collect(RoombaState(x=x,y=y,cmd_1=cmd_1,cmd_2=cmd_2,cmd_3=cmd_3,cmd_4=cmd_4,status=st) for x in x_states, y in y_states, cmd_1 in cmd_states, cmd_2 in cmd_states, cmd_3 in cmd_states, cmd_4 in cmd_states, st in statuses))
     else
         return mdp(m).sspace
     end
@@ -298,10 +283,16 @@ end
 function POMDPs.n_states(m::RoombaModel)
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         ss = mdp(m).sspace
-        nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
+    		nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-                            round(Int, 2*pi/ss.th_step)+1,
-                            3))
+                            2))
+        # nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
+                            # convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
+                            # round(Int, 2*pi/ss.cmd_step)+1,
+              							# round(Int, 2*pi/ss.cmd_step)+1,
+							              # round(Int, 2*pi/ss.cmd_step)+1,
+						              	# round(Int, 2*pi/ss.cmd_step)+1,
+                            # 2))
         return nstates
     else
         error("State-space must be DiscreteRoombaStateSpace.")
@@ -314,14 +305,23 @@ function POMDPs.stateindex(m::RoombaModel, s::RoombaState)
         ss = mdp(m).sspace
         xind = floor(Int, (s[1] - ss.XLIMS[1]) / ss.x_step + 0.5) + 1
         yind = floor(Int, (s[2] - ss.YLIMS[1]) / ss.y_step + 0.5) + 1
-        thind = floor(Int, (s[3] - (-pi)) / ss.th_step + 0.5) + 1
-        stind = convert(Int, s[4] + 2)
+        stind = convert(Int, s[3] + 1)
+		# cmd1ind = floor(Int, (s[4] - (-pi)) / ss.cmd_step + 0.5) + 1  # For Modified Problem
+		# cmd2ind = floor(Int, (s[5] - (-pi)) / ss.cmd_step + 0.5) + 1
+		# cmd3ind = floor(Int, (s[6] - (-pi)) / ss.cmd_step + 0.5) + 1
+		# cmd4ind = floor(Int, (s[7] - (-pi)) / ss.cmd_step + 0.5) + 1
 
         lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-                            round(Int, 2*pi/ss.th_step)+1,
-                            3))
-        return lin[xind,yind,thind,stind]
+                            2))
+		# lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
+	    #                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
+	    #                     round(Int, 2*pi/ss.cmd_step)+1,
+		  #                     round(Int, 2*pi/ss.cmd_step)+1,
+		  #                     round(Int, 2*pi/ss.cmd_step)+1,
+		  #                     round(Int, 2*pi/ss.cmd_step)+1,
+	    #                     2))
+        return lin[xind,yind,stind,cmd1ind,cmd2ind,cmd3ind,cmd4ind]
     else
         error("State-space must be DiscreteRoombaStateSpace.")
     end
@@ -333,17 +333,27 @@ function index_to_state(m::RoombaModel, si::Int)
         ss = mdp(m).sspace
         lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-                            round(Int, 2*pi/ss.th_step)+1,
-                            3))
+                            2))
+		# lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
+		#                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
+	  #                     round(Int, 2*pi/ss.cmd_step)+1,
+		#                     round(Int, 2*pi/ss.cmd_step)+1,
+		#                     round(Int, 2*pi/ss.cmd_step)+1,
+		#                     round(Int, 2*pi/ss.cmd_step)+1,
+	  #                     2))
 
-        xi,yi,thi,sti = Tuple(lin[si])
+        xi,yi,sti = Tuple(lin[si])
+		# xi,yi,sti,cmd1i,cmd2i,cmd3i,cmd4i = Tuple(lin[si])  # For Modified Problem
 
         x = ss.XLIMS[1] + (xi-1) * ss.x_step
         y = ss.YLIMS[1] + (yi-1) * ss.y_step
-        th = -pi + (thi-1) * ss.th_step
-        st = sti - 2
+        st = sti - 1
+		# cmd_1 = -pi + (cmd1i-1) * ss.cmd_step
+		# cmd_2 = -pi + (cmd2i-1) * ss.cmd_step
+		# cmd_3 = -pi + (cmd3i-1) * ss.cmd_step
+		# cmd_4 = -pi + (cmd4i-1) * ss.cmd_step
 
-        return RoombaState(x,y,th,st)
+        return RoombaState(x=x, y=y, status=st)
 
     else
         error("State-space must be DiscreteRoombaStateSpace.")
@@ -369,7 +379,6 @@ function POMDPs.reward(m::RoombaModel,
 
     # terminal rewards
     cum_reward += mdp(m).goal_reward*(sp.status == 1.0)
-#     cum_reward += mdp(m).stairs_penalty*(sp.status == -1.0)
 
     return cum_reward
 end
@@ -430,6 +439,7 @@ end
 POMDPs.n_observations(m::DiscreteLidarPOMDP) = length(m.sensor.disc_points) + 1
 POMDPs.observations(m::DiscreteLidarPOMDP) = vec(1:n_observations(m))
 
+
 # new stuff
 POMDPs.observation(m::CommandPOMDP,
 				   a::AbstractVector{Float64},
@@ -439,13 +449,13 @@ POMDPs.observation(m::CommandPOMDP,
 	# use some tie-breaking scheme to decide what to return
 	x, y = sp # assume that the first two elements of the state are x, y
 			  # (In Julia, you only have to unpack the first n elemenst of tuples)
-	gx, xy = get_goal_xy(m)
+	gx, xy = get_goal_pos(m)
 
 	# calculate angle to goal using arctan - returns an angle between -pi and pi
 	# Awesome note: in Julia you can type "pi" and get the value of pi....
 	th_goal = atan(gx - x, gy - y)
 
-	# choose action - note that there is a very explici tie-break assumption
+	# choose action - note that there is a very explicit tie-break assumption
 	# here - we are choosing randomly
 	dirs = Random.shuffle(m.sensor.dirs)
 
@@ -504,13 +514,6 @@ function render(ctx::CairoContext, m::RoombaModel, step)
     set_source_rgb(ctx, 1, 0.6, 0.6)
     fill(ctx)
 
-    # Draw line indicating orientation
-    move_to(ctx, x, y)
-    end_point = [state[1] + ROBOT_W*cos(state[3])/2, state[2] + ROBOT_W*sin(state[3])/2]
-    end_x, end_y = transform_coords(end_point)
-    line_to(ctx, end_x, end_y)
-    set_source_rgb(ctx, 0, 0, 0)
-    stroke(ctx)
     return ctx
 end
 
