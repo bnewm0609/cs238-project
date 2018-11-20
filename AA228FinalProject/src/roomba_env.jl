@@ -18,7 +18,7 @@ State of a Roomba.
 - `x::Float64` x location in meters
 - `y::Float64` y location in meters
 - `theta::Float64` orientation in radians
-- `status::Bool` indicator whether robot has reached goal state or stairs
+- `status::Bool` indicator whether robot has reached goal state
 """
 struct RoombaState <: FieldVector{4, Float64}
     x::Float64
@@ -54,7 +54,6 @@ Define the Roomba MDP.
 - `contact_pen::Float64` penalty for wall-contact
 - `time_pen::Float64` penalty per time-step
 - `goal_reward::Float64` reward for reaching goal
-- `stairs_penalty::Float64` penalty for reaching stairs
 - `config::Int` specifies room configuration (location of stairs/goal) {1,2,3}
 - `room::Room` environment room struct
 - `sspace::SS` environment state-space (ContinuousRoombaStateSpace or DiscreteRoombaStateSpace)
@@ -67,7 +66,7 @@ Define the Roomba MDP.
     contact_pen::Float64 = -1.0 
     time_pen::Float64 = -0.1
     goal_reward::Float64 = 10
-    stairs_penalty::Float64 = -10
+#     stairs_penalty::Float64 = -10
     config::Int = 1
     room::Room  = Room(configuration=config)
     sspace::SS = ContinuousRoombaStateSpace()
@@ -187,15 +186,16 @@ end
 
 # function to get goal xy location for heuristic controllers
 function get_goal_xy(m::RoombaModel)
-    grn = mdp(m).room.goal_rect
-    gwn = mdp(m).room.goal_wall
-    gr = mdp(m).room.rectangles[grn]
-    corners = gr.corners
-    if gwn == 4
-        return (corners[1,:] + corners[4,:]) / 2.
-    else
-        return (corners[gwn,:] + corners[gwn+1,:]) / 2.
-    end
+    return mdp(m).room.goal_pos
+#     grn = mdp(m).room.goal_rect
+#     gwn = mdp(m).room.goal_wall
+#     gr = mdp(m).room.rectangles[grn]
+#     corners = gr.corners
+#     if gwn == 4
+#         return (corners[1,:] + corners[4,:]) / 2.
+#     else
+#         return (corners[gwn,:] + corners[gwn+1,:]) / 2.
+#     end
 end
 
 # initializes x,y,th of Roomba in the room
@@ -237,14 +237,19 @@ function POMDPs.transition(m::RoombaModel,
     des_step = v*dt
     next_x, next_y = legal_translate(e.room, p0, heading, des_step)
 
-    # Determine whether goal state or stairs have been reached
-    grn = mdp(m).room.goal_rect
-    gwn = mdp(m).room.goal_wall
-    srn = mdp(m).room.stair_rect
-    swn = mdp(m).room.stair_wall
-    gr = mdp(m).room.rectangles[grn]
-    sr = mdp(m).room.rectangles[srn]
-    next_status = 1.0*contact_wall(gr, gwn, [next_x, next_y]) - 1.0*contact_wall(sr, swn, [next_x, next_y])
+    # Determine whether goal state has been reached
+    res = false
+    if SVector(next_x, next_y) == e.room.goal_pos
+        res = true
+    end
+    next_status = 1.0*res
+    # grn = mdp(m).room.goal_rect
+    # gwn = mdp(m).room.goal_wall
+    # srn = mdp(m).room.stair_rect
+    # swn = mdp(m).room.stair_wall
+    # gr = mdp(m).room.rectangles[grn]
+    # sr = mdp(m).room.rectangles[srn]
+    # next_status = 1.0*contact_wall(gr, gwn, [next_x, next_y]) - 1.0*contact_wall(sr, swn, [next_x, next_y])
 
     # define next state
     sp = RoombaState(next_x, next_y, next_th, next_status)
@@ -347,7 +352,7 @@ function POMDPs.reward(m::RoombaModel,
 
     # terminal rewards
     cum_reward += mdp(m).goal_reward*(sp.status == 1.0)
-    cum_reward += mdp(m).stairs_penalty*(sp.status == -1.0)
+#     cum_reward += mdp(m).stairs_penalty*(sp.status == -1.0)
 
     return cum_reward  
 end
