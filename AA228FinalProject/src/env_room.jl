@@ -163,6 +163,7 @@ end
 mutable struct Room
     rectangles::Array{Rectangle, 1}
     areas::Array{Float64, 1}
+    goal_pos::Array{Float64, 1}  # coord of goal state
 
     function Room(; configuration=1)
 
@@ -178,6 +179,11 @@ mutable struct Room
 
         retval.rectangles = rectangles
         retval.areas = [r.area for r in rectangles]
+    
+        # initializes goal state
+        # rng = Int32(1):Int32(10)
+        goal_pos = init_pos(e.room, Int32(1):Int32(10))
+        retval.goal_pos = goal_pos
 
         retval
     end

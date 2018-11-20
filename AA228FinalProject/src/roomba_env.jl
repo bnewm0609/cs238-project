@@ -151,6 +151,22 @@ POMDPs.obstype(::Type{DiscreteLidar}) = Int
 POMDPs.obstype(::DiscreteLidar) = Int
 DiscreteLidar(disc_points) = DiscreteLidar(Lidar().ray_stdev, disc_points)
 
+struct Command
+	dirs::Array{Tuple{Int64,Tuple{Float64,Float64}},1}
+end
+# commands are not noisy - they are completely deterministic
+# the first value is the action, the second is the tuple (upper bound, lower bound)
+# in the observation function the calculated theta has to be less than upper bound
+# and greater than or equal to lower bound
+# Note: the bounds for 1 might look reversed, but that's to handle wrapping. It
+# The case is handled correctly in the POMDPs.observation function
+Command = Command([(1, (-3pi/4, 3pi/4)), (2, (-pi/4, -3pi/4)),
+					(3, (pi/4, -pi/4)), (4, (3pi/4, pi/4))])
+
+
+POMDPs.obstype(::Type{Command}) = Int # 1, 2, 3, 4 for left, down, right, up
+POMDPs.obstype(::Command) = Int
+
 
 
 # Shorthands
@@ -158,6 +174,7 @@ const RoombaModel = Union{RoombaMDP, RoombaPOMDP}
 const BumperPOMDP = RoombaPOMDP{Bumper, Bool}
 const LidarPOMDP = RoombaPOMDP{Lidar, Float64}
 const DiscreteLidarPOMDP = RoombaPOMDP{DiscreteLidar, Int}
+const CommandPOMDP = RoombaPOMDP{Command, Int}
 
 # access the mdp of a RoombaModel
 mdp(e::RoombaMDP) = e
@@ -187,8 +204,8 @@ function POMDPs.actionindex(m::RoombaModel, a::RoombaAct)
 end
 
 # function to get goal xy location for heuristic controllers
-function get_goal_xy(m::RoombaModel)
-	return mdp(m).room.goal_xy
+function get_goal_pos(m::RoombaModel)
+    return mdp(m).room.goal_pos
 end
 
 # initializes x,y of Roomba in the room
@@ -224,7 +241,7 @@ function POMDPs.transition(m::RoombaModel,
     # propagate dynamics without wall considerations
     x, y = s
     dt = e.dt
-	v = e.v
+	  v = e.v
 
     # make sure we arent going through a wall
     p0 = SVector(x, y)
@@ -266,15 +283,15 @@ end
 function POMDPs.n_states(m::RoombaModel)
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         ss = mdp(m).sspace
-		nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
+    		nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
                             2))
         # nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
                             # convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
                             # round(Int, 2*pi/ss.cmd_step)+1,
-							# round(Int, 2*pi/ss.cmd_step)+1,
-							# round(Int, 2*pi/ss.cmd_step)+1,
-							# round(Int, 2*pi/ss.cmd_step)+1,
+              							# round(Int, 2*pi/ss.cmd_step)+1,
+							              # round(Int, 2*pi/ss.cmd_step)+1,
+						              	# round(Int, 2*pi/ss.cmd_step)+1,
                             # 2))
         return nstates
     else
@@ -300,9 +317,9 @@ function POMDPs.stateindex(m::RoombaModel, s::RoombaState)
 		# lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
 	    #                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
 	    #                     round(Int, 2*pi/ss.cmd_step)+1,
-		#                     round(Int, 2*pi/ss.cmd_step)+1,
-		#                     round(Int, 2*pi/ss.cmd_step)+1,
-		#                     round(Int, 2*pi/ss.cmd_step)+1,
+		  #                     round(Int, 2*pi/ss.cmd_step)+1,
+		  #                     round(Int, 2*pi/ss.cmd_step)+1,
+		  #                     round(Int, 2*pi/ss.cmd_step)+1,
 	    #                     2))
         return lin[xind,yind,stind,cmd1ind,cmd2ind,cmd3ind,cmd4ind]
     else
@@ -319,11 +336,11 @@ function index_to_state(m::RoombaModel, si::Int)
                             2))
 		# lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
 		#                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-	    #                     round(Int, 2*pi/ss.cmd_step)+1,
+	  #                     round(Int, 2*pi/ss.cmd_step)+1,
 		#                     round(Int, 2*pi/ss.cmd_step)+1,
 		#                     round(Int, 2*pi/ss.cmd_step)+1,
 		#                     round(Int, 2*pi/ss.cmd_step)+1,
-	    #                     2))
+	  #                     2))
 
         xi,yi,sti = Tuple(lin[si])
 		# xi,yi,sti,cmd1i,cmd2i,cmd3i,cmd4i = Tuple(lin[si])  # For Modified Problem
@@ -421,6 +438,40 @@ end
 
 POMDPs.n_observations(m::DiscreteLidarPOMDP) = length(m.sensor.disc_points) + 1
 POMDPs.observations(m::DiscreteLidarPOMDP) = vec(1:n_observations(m))
+
+
+# new stuff
+POMDPs.observation(m::CommandPOMDP,
+				   a::AbstractVector{Float64},
+				   sp::AbstractVector{Float64})
+				   )
+	# basically what we have to do is get the direction to the room and then
+	# use some tie-breaking scheme to decide what to return
+	x, y = sp # assume that the first two elements of the state are x, y
+			  # (In Julia, you only have to unpack the first n elemenst of tuples)
+	gx, xy = get_goal_pos(m)
+
+	# calculate angle to goal using arctan - returns an angle between -pi and pi
+	# Awesome note: in Julia you can type "pi" and get the value of pi....
+	th_goal = atan(gx - x, gy - y)
+
+	# choose action - note that there is a very explicit tie-break assumption
+	# here - we are choosing randomly
+	dirs = Random.shuffle(m.sensor.dirs)
+
+	for (a, dir) in dirs
+		if a == 1 # because of wrapping, we need to handle this case differently
+			if th_goal <= dir[1] || th_goal > dir[2]
+				return a
+			end
+		elseif th_goal <= dir[1] && th_goal > dir[2]
+			return a
+		end
+	end
+	@assert false # we shouldn't get here
+end
+POMDPS.n_observations(m::CommandPOMDP) = length(m.sensor.dirs)
+POMDPS.observations(m::CommandPOMDP) = vec(1:4)
 
 # define discount factor
 POMDPs.discount(m::RoombaModel) = 0.95
