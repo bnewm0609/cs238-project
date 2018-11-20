@@ -161,7 +161,8 @@ end
 # The case is handled correctly in the POMDPs.observation function
 Command() = Command([(1, (-3pi/4, 3pi/4)), (2, (-pi/4, -3pi/4)),
 					(3, (pi/4, -pi/4)), (4, (3pi/4, pi/4))])
-
+OverlappingCommand() = Command([(1, (-pi/2, pi/2)), (2, (0, -pi)),
+					(3, (pi/2, -pi/2)), (4, (pi, 0))])
 
 POMDPs.obstype(::Type{Command}) = Int # 1, 2, 3, 4 for left, down, right, up
 POMDPs.obstype(::Command) = Int
@@ -174,6 +175,7 @@ const BumperPOMDP = RoombaPOMDP{Bumper, Bool}
 const LidarPOMDP = RoombaPOMDP{Lidar, Float64}
 const DiscreteLidarPOMDP = RoombaPOMDP{DiscreteLidar, Int}
 const CommandPOMDP = RoombaPOMDP{Command, Int}
+const OverlappingCommandPOMDP = RoombaPOMDP{OverlappingCommand, Int}
 
 # access the mdp of a RoombaModel
 mdp(e::RoombaMDP) = e
@@ -450,7 +452,7 @@ POMDPs.observations(m::DiscreteLidarPOMDP) = vec(1:n_observations(m))
 
 
 # new stuff
-function POMDPs.observation(m::CommandPOMDP,
+function POMDPs.observation(m::Union{CommandPOMDP, OverlappingCommandPOMDP},
 				   a::AbstractVector{Float64},
 				   sp::AbstractVector{Float64})
 	# basically what we have to do is get the direction to the room and then
@@ -466,7 +468,6 @@ function POMDPs.observation(m::CommandPOMDP,
 	# choose action - note that there is a very explicit tie-break assumption
 	# here - we are choosing randomly
 	dirs = Random.shuffle(m.sensor.dirs)
-
 	for (a, dir) in dirs
 		if a == 1 # because of wrapping, we need to handle this case differently
 			if th_goal <= dir[1] || th_goal > dir[2]
@@ -478,8 +479,8 @@ function POMDPs.observation(m::CommandPOMDP,
 	end
 	@assert false # we shouldn't get here
 end
-POMDPs.n_observations(m::CommandPOMDP) = length(m.sensor.dirs)
-POMDPs.observations(m::CommandPOMDP) = vec(1:4)
+POMDPs.n_observations(m::Union{CommandPOMDP, OverlappingCommandPOMDP}) = length(m.sensor.dirs)
+POMDPs.observations(m::Union{CommandPOMDP, OverlappingCommandPOMDP}) = vec(1:4)
 
 # define discount factor
 POMDPs.discount(m::RoombaModel) = 0.95
