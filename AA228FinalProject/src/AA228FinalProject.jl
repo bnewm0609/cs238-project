@@ -31,6 +31,7 @@ export
     Command,
     CommandResampler,
     OverlappingCommand,
+    OverlappingCommandResampler,
     RoombaParticleFilter,
     get_goal_pos,
     at_goal,

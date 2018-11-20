@@ -12,7 +12,7 @@ end
 #---
 
 Pkg.instantiate()
-Pkg.install("Cairo")
+#Pkg.install("Cairo")
 
 # import necessary packages
 using AA228FinalProject
@@ -26,7 +26,8 @@ using Gtk
 using Random
 using Printf
 
-sensor = Command() # or Bumper() for the bumper version of the environment
+#sensor = Command() # or Bumper() for the bumper version of the environment
+sensor = OverlappingCommand()
 m = RoombaPOMDP(sensor=sensor, mdp=RoombaMDP());
 
 num_particles = 2000

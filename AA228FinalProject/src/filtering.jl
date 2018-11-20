@@ -17,6 +17,10 @@ struct CommandResampler
     n::Int
 end
 
+struct OverlappingCommandResampler
+    n::Int
+end
+
 """
 Definition of the particle filter for the Roomba environment
 Fields:
@@ -28,6 +32,7 @@ mutable struct RoombaParticleFilter <: POMDPs.Updater
     theta_noise_coefficient::Float64
 end
 
+# for regular command resampler, also have weights {0, 1}
 function ParticleFilters.resample(cr::CommandResampler, b::WeightedParticleBelief{RoombaState}, rng::AbstractRNG)
     new = RoombaState[]
     for (p, w) in weighted_particles(b)
@@ -68,7 +73,10 @@ function ParticleFilters.resample(br::BumperResampler, b::WeightedParticleBelief
 end
 
 # resample function for unweighted particles
-function ParticleFilters.resample(br::Union{BumperResampler,LidarResampler,CommandResampler}, b, rng::AbstractRNG)
+function ParticleFilters.resample(br::Union{BumperResampler,LidarResampler,
+                                            CommandResampler,
+                                            OverlappingCommandResampler},
+                                 b, rng::AbstractRNG)
     ps = Array{RoombaState}(undef, br.n)
     for i in 1:br.n
         ps[i] = rand(rng, b)
@@ -78,11 +86,30 @@ end
 
 # Resample function for continuous weights necessary for lidar sensor
 function ParticleFilters.resample(lr::LidarResampler, b::WeightedParticleBelief{RoombaState}, rng::AbstractRNG)
-
     ps = resample(lr.lvr, b, rng)
     return ps
 end
 
+# Resample function for weights with OverlappingCommand sensor - each command
+# can refer to two directions
+function ParticleFilters.resample(ocr::OverlappingCommandResampler, b::WeightedParticleBelief{RoombaState}, rng::AbstractRNG)
+    newState = RoombaState[]
+    for (p, w) in weighted_particles(b)
+        if w <= 1.0 && w != 0
+            push!(newState, p)
+        else
+            @assert w == 0
+        end
+    end
+    if isempty(newState) # no particles consistent with observations
+        return ParticleCollection(particles(b))
+    end
+    extras = rand(rng, newState, ocr.n-length(newState))
+    for p in extras
+        push!(newState, p)
+    end
+    return ParticleCollection(newState)
+end
 # Modified Update function adds noise to the actions that propagate particles
 function POMDPs.update(up::RoombaParticleFilter, b::ParticleCollection{RoombaState}, a, o)
     ps = particles(b)
