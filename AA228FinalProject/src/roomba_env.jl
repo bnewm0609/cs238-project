@@ -1,6 +1,8 @@
 # Defines the environment as a POMDPs.jl MDP and POMDP
 # maintained by {jmorton2,kmenda}@stanford.edu
 
+known_commands = true
+
 # Wraps ang to be in (-pi, pi]
 function wrap_to_pi(ang::Float64)
     if ang > pi
@@ -17,20 +19,20 @@ State of a Roomba.
 # Fields
 - `x::Float64` x location in meters
 - `y::Float64` y location in meters
+- `status::Float64` indicator whether robot has reached goal state
 - `cmd_1::Float64`: mapping for command 1 in radians
 - `cmd_2::Float64`: mapping for command 2 in radians
 - `cmd_3::Float64`: mapping for command 3 in radians
 - `cmd_4::Float64`: mapping for command 4 in radians
-- `status::Float64` indicator whether robot has reached goal state
 """
 @with_kw struct RoombaState <: FieldVector{7, Float64}
     x::Float64
     y::Float64
 	status::Float64
 	cmd_1::Float64 = pi # angles are (-pi to pi]
-	cmd_2::Float64 = -pi/2
+	cmd_2::Float64 = -pi/2.
 	cmd_3::Float64 = 0.
-	cmd_4::Float64 = pi/2
+	cmd_4::Float64 = pi/2.
 end
 
 # Struct for a Roomba action
@@ -81,7 +83,7 @@ struct ContinuousRoombaStateSpace end
 Specify a DiscreteRoombaStateSpace
 - `x_step::Float64` distance between discretized points in x
 - `y_step::Float64` distance between discretized points in y
-#- `cmd_step::Float64` distance between discretized points in command mappings # For Modified Problem
+- `cmd_step::Float64` distance between discretized points in command mappings # For Modified Problem
 - `XLIMS::Vector` boundaries of room (x-dimension)
 - `YLIMS::Vector` boundaries of room (y-dimension)
 
@@ -89,7 +91,7 @@ Specify a DiscreteRoombaStateSpace
 struct DiscreteRoombaStateSpace
     x_step::Float64
     y_step::Float64
-    # cmd_step::Float64  # For Modified Problem
+    cmd_step::Float64  # For Modified Problem
     XLIMS::Vector
     YLIMS::Vector
 end
@@ -97,9 +99,9 @@ end
 # function to construct DiscreteRoombaStateSpace:
 # `num_x_pts::Int` number of points to discretize x range to
 # `num_y_pts::Int` number of points to discretize y range to
-## `num_cmd_pts::Int` number of points to discretize command mapping range to # For Modified Problem
-function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int)
-# function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int, num_cmd_pts::Int) # For Modified Problem
+# `num_cmd_pts::Int` number of points to discretize command mapping range to # For Modified Problem
+# function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int)
+function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int, num_cmd_pts::Int) # For Modified Problem
 
     # hardcoded room-limits
     # watch for consistency with env_room
@@ -108,7 +110,7 @@ function DiscreteRoombaStateSpace(num_x_pts::Int, num_y_pts::Int)
 
     return DiscreteRoombaStateSpace((XLIMS[2]-XLIMS[1])/(num_x_pts-1),
                                     (YLIMS[2]-YLIMS[1])/(num_y_pts-1),
-#                                    2*pi/(num_cmd_pts-1),  # For Modified Problem
+                                    2*pi/(num_cmd_pts-1),  # For Modified Problem
                                     XLIMS,YLIMS)
 end
 
@@ -216,10 +218,11 @@ end
 function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
     e = mdp(m)
     x, y = init_pos(e.room, rng)
-	# cmd_1 = rand() * 2*pi - pi
-	# cmd_2 = rand() * 2*pi - pi
-	# cmd_3 = rand() * 2*pi - pi
-	# cmd_4 = rand() * 2*pi - pi
+	status = 0.0
+	cmd_1 = known_commands ? pi     : rand() * 2*pi - pi
+	cmd_2 = known_commands ? -pi/2. : rand() * 2*pi - pi
+	cmd_3 = known_commands ? 0. 	: rand() * 2*pi - pi
+	cmd_4 = known_commands ? pi/2.	: rand() * 2*pi - pi
 
 	# TODO: confirm that we don't need to do this
 	# while(at_goal(x,y,m))
@@ -227,8 +230,7 @@ function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
 	# 	x, y = init_pos(e.room, rng)
 	# end
 
-    is = RoombaState(x=x, y=y, status=0.0)
-	# is = RoombaState(x=x, y=y, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4 status=0.0)
+	is = RoombaState(x=x, y=y, status=status, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4)
 
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         isi = stateindex(m, is)
@@ -262,7 +264,7 @@ function POMDPs.transition(m::RoombaModel,
     next_status = 1.0*at_goal(next_x, next_y, m)
 
     # define next state
-    sp = RoombaState(x=next_x, y=next_y, status=next_status)
+    sp = RoombaState(x=next_x, y=next_y, status=next_status, cmd_1=s.cmd_1, cmd_2=s.cmd_2, cmd_3=s.cmd_3, cmd_4=s.cmd_4)
 
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         # round the states to nearest grid point
@@ -279,10 +281,12 @@ function POMDPs.states(m::RoombaModel)
         ss = mdp(m).sspace
         x_states = range(ss.XLIMS[1], stop=ss.XLIMS[2], step=ss.x_step)
         y_states = range(ss.YLIMS[1], stop=ss.YLIMS[2], step=ss.y_step)
-        # cmd_states = range(-pi, stop=pi, step=ss.cmd_step)  # For Modified Problem
-        statuses = [0.,1.]
-        return vec(collect(RoombaState(x=x,y=y,status=st) for x in x_states, y in y_states, st in statuses))
-        # return vec(collect(RoombaState(x=x,y=y,cmd_1=cmd_1,cmd_2=cmd_2,cmd_3=cmd_3,cmd_4=cmd_4,status=st) for x in x_states, y in y_states, cmd_1 in cmd_states, cmd_2 in cmd_states, cmd_3 in cmd_states, cmd_4 in cmd_states, st in statuses))
+		statuses = [0.,1.]
+        cmd_1_states = known_commands ? [pi] : range(-pi, stop=pi, step=ss.cmd_step)  # For Modified Problem
+		cmd_2_states = known_commands ? [-pi/2.] : range(-pi, stop=pi, step=ss.cmd_step)
+		cmd_3_states = known_commands ? [0.] : range(-pi, stop=pi, step=ss.cmd_step)
+		cmd_4_states = known_commands ? [pi/2.] : range(-pi, stop=pi, step=ss.cmd_step)
+        return vec(collect(RoombaState(x=x,y=y,cmd_1=cmd_1,cmd_2=cmd_2,cmd_3=cmd_3,cmd_4=cmd_4,status=st) for x in x_states, y in y_states, st in statuses, cmd_1 in cmd_1_states, cmd_2 in cmd_2_states, cmd_3 in cmd_3_states, cmd_4 in cmd_4_states))
     else
         return mdp(m).sspace
     end
@@ -292,16 +296,15 @@ end
 function POMDPs.n_states(m::RoombaModel)
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         ss = mdp(m).sspace
-    		nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
+    		nstates = known_commands ? prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-                            2))
-        # nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
-                            # convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-                            # round(Int, 2*pi/ss.cmd_step)+1,
-              							# round(Int, 2*pi/ss.cmd_step)+1,
-							              # round(Int, 2*pi/ss.cmd_step)+1,
-						              	# round(Int, 2*pi/ss.cmd_step)+1,
-                            # 2))
+                            2)) : prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
+                            convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
+							2,
+                            round(Int, 2*pi/ss.cmd_step)+1,
+  							round(Int, 2*pi/ss.cmd_step)+1,
+			                round(Int, 2*pi/ss.cmd_step)+1,
+			              	round(Int, 2*pi/ss.cmd_step)+1))
         return nstates
     else
         error("State-space must be DiscreteRoombaStateSpace.")
@@ -312,26 +315,27 @@ end
 function POMDPs.stateindex(m::RoombaModel, s::RoombaState)
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         ss = mdp(m).sspace
-        xind = floor(Int, (s[1] - ss.XLIMS[1]) / ss.x_step + 0.5) + 1
-        yind = floor(Int, (s[2] - ss.YLIMS[1]) / ss.y_step + 0.5) + 1
-        stind = convert(Int, s[3] + 1)
-		# cmd1ind = floor(Int, (s[4] - (-pi)) / ss.cmd_step + 0.5) + 1  # For Modified Problem
-		# cmd2ind = floor(Int, (s[5] - (-pi)) / ss.cmd_step + 0.5) + 1
-		# cmd3ind = floor(Int, (s[6] - (-pi)) / ss.cmd_step + 0.5) + 1
-		# cmd4ind = floor(Int, (s[7] - (-pi)) / ss.cmd_step + 0.5) + 1
+        xind = floor(Int, (s.x - ss.XLIMS[1]) / ss.x_step + 0.5) + 1
+        yind = floor(Int, (s.y - ss.YLIMS[1]) / ss.y_step + 0.5) + 1
+		stind = convert(Int, s.status + 1)
+		cmd1ind = known_commands ? 1 : floor(Int, (s.cmd_1 - (-pi)) / ss.cmd_step + 0.5) + 1  # For Modified Problem
+		cmd2ind = known_commands ? 1 : floor(Int, (s.cmd_2 - (-pi)) / ss.cmd_step + 0.5) + 1
+		cmd3ind = known_commands ? 1 : floor(Int, (s.cmd_3 - (-pi)) / ss.cmd_step + 0.5) + 1
+		cmd4ind = known_commands ? 1 : floor(Int, (s.cmd_4 - (-pi)) / ss.cmd_step + 0.5) + 1
 
-        lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
+        lin = known_commands ? LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-                            2))
-		# lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
-	    #                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-	    #                     round(Int, 2*pi/ss.cmd_step)+1,
-		  #                     round(Int, 2*pi/ss.cmd_step)+1,
-		  #                     round(Int, 2*pi/ss.cmd_step)+1,
-		  #                     round(Int, 2*pi/ss.cmd_step)+1,
-	    #                     2))
-		return lin[xind,yind,stind]
-        # return lin[xind,yind,stind,cmd1ind,cmd2ind,cmd3ind,cmd4ind]  # For Modified Problem
+							2,
+							1, 1, 1, 1
+							)) : LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
+                     		convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
+							2,
+	                        round(Int, 2*pi/ss.cmd_step)+1,
+		                    round(Int, 2*pi/ss.cmd_step)+1,
+		                    round(Int, 2*pi/ss.cmd_step)+1,
+	                     	round(Int, 2*pi/ss.cmd_step)+1
+							))
+        return lin[xind,yind,stind,cmd1ind,cmd2ind,cmd3ind,cmd4ind]  # For Modified Problem
     else
         error("State-space must be DiscreteRoombaStateSpace.")
     end
@@ -341,29 +345,27 @@ end
 function index_to_state(m::RoombaModel, si::Int)
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         ss = mdp(m).sspace
-        lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
+        lin = known_commands ? CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
                             convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-                            2))
-		# lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
-		#                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-	  #                     round(Int, 2*pi/ss.cmd_step)+1,
-		#                     round(Int, 2*pi/ss.cmd_step)+1,
-		#                     round(Int, 2*pi/ss.cmd_step)+1,
-		#                     round(Int, 2*pi/ss.cmd_step)+1,
-	  #                     2))
+                            2)) : CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
+		                    convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
+	                      	2,
+							round(Int, 2*pi/ss.cmd_step)+1,
+		                    round(Int, 2*pi/ss.cmd_step)+1,
+		                    round(Int, 2*pi/ss.cmd_step)+1,
+		                    round(Int, 2*pi/ss.cmd_step)+1))
 
-        xi,yi,sti = Tuple(lin[si])
-		# xi,yi,sti,cmd1i,cmd2i,cmd3i,cmd4i = Tuple(lin[si])  # For Modified Problem
+		xi,yi,sti,cmd1i,cmd2i,cmd3i,cmd4i = Tuple(lin[si])  # For Modified Problem
 
         x = ss.XLIMS[1] + (xi-1) * ss.x_step
         y = ss.YLIMS[1] + (yi-1) * ss.y_step
         st = sti - 1
-		# cmd_1 = -pi + (cmd1i-1) * ss.cmd_step
-		# cmd_2 = -pi + (cmd2i-1) * ss.cmd_step
-		# cmd_3 = -pi + (cmd3i-1) * ss.cmd_step
-		# cmd_4 = -pi + (cmd4i-1) * ss.cmd_step
+		cmd_1 = known_commands ? pi    : -pi + (cmd1i-1) * ss.cmd_step
+		cmd_2 = known_commands ? -pi/2. : -pi + (cmd2i-1) * ss.cmd_step
+		cmd_3 = known_commands ? 0.     : -pi + (cmd3i-1) * ss.cmd_step
+		cmd_4 = known_commands ? pi/2.  : -pi + (cmd4i-1) * ss.cmd_step
 
-        return RoombaState(x=x, y=y, status=st)
+        return RoombaState(x=x, y=y, status=st, cmd_1=cmd_1, cmd2=cmd2, cmd3=cmd3, cmd4=cmd4)
 
     else
         error("State-space must be DiscreteRoombaStateSpace.")
