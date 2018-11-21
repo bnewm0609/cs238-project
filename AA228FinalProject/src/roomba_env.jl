@@ -221,10 +221,11 @@ function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
 	# cmd_3 = rand() * 2*pi - pi
 	# cmd_4 = rand() * 2*pi - pi
 
-	while(at_goal(x,y,m))
-		println("Goal pos: $(get_goal_pos(m)); Init pos: ($x, $y)")
-		x, y = init_pos(e.room, rng)
-	end
+	# TODO: confirm that we don't need to do this
+	# while(at_goal(x,y,m))
+	# 	println("Goal pos: $(get_goal_pos(m)); Init pos: ($x, $y)")
+	# 	x, y = init_pos(e.room, rng)
+	# end
 
     is = RoombaState(x=x, y=y, status=0.0)
 	# is = RoombaState(x=x, y=y, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4 status=0.0)
@@ -461,7 +462,7 @@ function POMDPs.observation(m::CommandPOMDP,
 
 	# calculate angle to goal using arctan - returns an angle between -pi and pi
 	# Awesome note: in Julia you can type "pi" and get the value of pi....
-	th_goal = atan(gx - x, gy - y)
+	th_goal = atan(gy - y, gx - x)
 
 	# choose action - note that there is a very explicit tie-break assumption
 	# here - we are choosing randomly
@@ -509,12 +510,26 @@ function render(ctx::CairoContext, m::RoombaModel, step)
                 arc(ctx, x, y, radius, 0, 2*pi)
                 set_source_rgba(ctx, 0.6, 0.6, 1, 0.3)
                 fill(ctx)
+
+				# command belief
+				ctr_x = 120
+				ctr_y = 500
+				for i = 4:7
+					x = ctr_x * (i-3) + 50 * cos(p[i])
+					y = ctr_y - 50 * sin(p[i]) # TODO: check; because y coordinates are flipped
+					arc(ctx, x, y, radius, 0, 2*pi)
+					set_source_rgba(ctx, 0.6, 0.6, 1, 0.3)
+					fill(ctx)
+				end
             end
         end
     end
 
     # Render room
     render(env.room, ctx)
+
+	# Render commands
+	render_commands(ctx)
 
     # Find center of robot in frame and draw circle
     x, y = transform_coords(state[1:2])
@@ -523,6 +538,14 @@ function render(ctx::CairoContext, m::RoombaModel, step)
     fill(ctx)
 
     return ctx
+end
+
+function render_commands(ctx::CairoContext)
+	for i = 1:4
+		arc(ctx, i*(600-2*60)/4, 500, 60, 0, 2*pi)
+		set_source_rgba(ctx, 0.8, 0.8, 0.8, 0.3)
+		fill(ctx)
+	end
 end
 
 function render(m::RoombaModel, step)

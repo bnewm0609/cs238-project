@@ -231,8 +231,8 @@ function transform_coords(pos::AbstractVector{Float64})
     w = 600
 
     # Perform conversion
-    x_trans = (x + 30.0)/50.0*h
-    y_trans = -(y - 20.0)/50.0*w
+    x_trans = (x + 30.0)/50.0*w
+    y_trans = -(y - 10.0)/50.0*h
 
     x_trans, y_trans
 end

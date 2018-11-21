@@ -181,7 +181,7 @@ mutable struct Room
         retval.areas = [r.area for r in rectangles]
 
         # initializes goal state
-        goal_pos = init_pos(retval, Base.GLOBAL_RNG) # TODO: Seed should be set elsewhere
+        goal_pos = init_pos(retval, MersenneTwister(10)) # TODO: Seed should be set elsewhere
         retval.goal_pos = goal_pos
 
         retval

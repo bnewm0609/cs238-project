@@ -34,6 +34,7 @@ export
     get_goal_pos,
     at_goal,
     wrap_to_pi,
+    transform_coords,
     ContinuousRoombaStateSpace,
     DiscreteRoombaStateSpace,
     render
