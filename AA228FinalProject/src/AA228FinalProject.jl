@@ -20,17 +20,17 @@ export
     RoombaState,
     RoombaAct,
     RoombaMDP,
-    RoombaPOMDP,
+    #RoombaPOMDP,
     RoombaModel,
-    BumperPOMDP,
-    BumperResampler,
-    Bumper,
-    Lidar,
-    Command,
-    CommandResampler,
-    DiscreteLidar,
-    LidarResampler,
-    RoombaParticleFilter,
+    #BumperPOMDP,
+    # BumperResampler,
+    # Bumper,
+    # Lidar,
+    # Command,
+    # CommandResampler,
+    # DiscreteLidar,
+    # LidarResampler,
+    # RoombaParticleFilter,
     get_goal_pos,
     at_goal,
     wrap_to_pi,
@@ -40,7 +40,8 @@ export
 
 include("line_segment_utils.jl")
 include("env_room.jl")
-include("roomba_env.jl")
+#nclude("roomba_env.jl")
+include("roomba_mdp_env.jl")
 include("filtering.jl")
 
 end
