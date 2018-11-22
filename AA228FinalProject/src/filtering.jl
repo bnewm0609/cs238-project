@@ -15,6 +15,7 @@ end
 
 struct CommandResampler
     n::Int
+    lvr::LowVarianceResampler
 end
 
 """
@@ -29,22 +30,24 @@ mutable struct RoombaParticleFilter <: POMDPs.Updater
 end
 
 function ParticleFilters.resample(cr::CommandResampler, b::WeightedParticleBelief{RoombaState}, rng::AbstractRNG)
-    new = RoombaState[]
-    for (p, w) in weighted_particles(b)
-        if w == 1.0
-            push!(new, p)
-        else
-            @assert w == 0
-        end
-    end
-    if isempty(new) # no particles consistent with observations
-        return ParticleCollection(particles(b))
-    end
-    extras = rand(rng, new, cr.n-length(new))
-    for p in extras
-        push!(new, p)
-    end
-    return ParticleCollection(new)
+    ps = resample(cr.lvr, b, rng)
+    return ps
+    # new = RoombaState[]
+    # for (p, w) in weighted_particles(b)
+    #     if w == 1.0
+    #         push!(new, p)
+    #     else
+    #         @assert w == 0
+    #     end
+    # end
+    # if isempty(new) # no particles consistent with observations
+    #     return ParticleCollection(particles(b))
+    # end
+    # extras = rand(rng, new, cr.n-length(new))
+    # for p in extras
+    #     push!(new, p)
+    # end
+    # return ParticleCollection(new)
 end
 
 # Resample function for weights in {0,1} necessary for bumper sensor
@@ -101,7 +104,30 @@ function POMDPs.update(up::RoombaParticleFilter, b::ParticleCollection{RoombaSta
             a_pert = a + SVector(up.theta_noise_coefficient*(rand(up.spf.rng)-0.5))
             sp = generate_s(up.spf.model, s, a_pert, up.spf.rng)
             push!(pm, sp)
-            push!(wm, obs_weight(up.spf.model, s, a_pert, sp, o))
+            ###
+            # higher when command mapping is closer to action you took
+            cmd_mapping = 0
+            if o == 1.
+                cmd_mapping = sp.cmd_1
+            elseif o == 2.
+                cmd_mapping = sp.cmd_2
+            elseif o == 3.
+                cmd_mapping = sp.cmd_3
+            elseif o == 4.
+                cmd_mapping = sp.cmd_4
+            end
+            # [-pi, pi]
+            difference = 0
+            d(x,y) = abs(atan(sin(x-y), cos(x-y)))/pi
+            for other_cmd in [sp.cmd_1, sp.cmd_2, sp.cmd_3, sp.cmd_4]
+                difference += d(a_pert[1], other_cmd)
+            end
+            difference -= d(a_pert[1], cmd_mapping)
+            difference += 1-d(a_pert[1], cmd_mapping)
+            difference /= 4
+            # higher when other command mappings are farther from the action you took
+            ###
+            push!(wm, (difference * obs_weight(up.spf.model, s, a_pert, sp, o)) * 0.95 + 0.05)
         end
     end
     # if all particles are terminal, return previous belief state

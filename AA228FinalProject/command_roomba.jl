@@ -33,7 +33,7 @@ num_particles = 2000
 # resampler = LidarResampler(num_particles, LowVarianceResampler(num_particles))
 # resampler = BumperResampler(num_particles)
 # for the bumper environment
-resampler = CommandResampler(num_particles)
+resampler = CommandResampler(num_particles, LowVarianceResampler(num_particles))
 
 spf = SimpleParticleFilter(m, resampler)
 
@@ -90,7 +90,7 @@ win = GtkWindow(c, "Roomba Environment", 600, 600)
 # dist = initialstate_distribution(m)
 # b0 = initialize_belief(belief_updater, dist)
 
-for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=100))
+for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=500))
     @guarded draw(c) do widget
 
         # the following lines render the room, the particles, and the roomba
@@ -122,6 +122,8 @@ for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=100))
     sleep(0.1) # to slow down the simulation
 end
 
+############
+
 using Statistics
 
 total_rewards = []
@@ -142,9 +144,48 @@ end
 
 #############
 
-using POMDPModels, BasicPOMCP
-solver = POMCPSolver()
-planner = solve(solver, m)
+#POMCP and QMDP not working rn
+using POMCPOW, POMDPModels, POMDPSimulators, POMDPPolicies
+solver = POMCPOWSolver(criterion=MaxUCB(20.0))
+policy = solve(solver, m)
+
+hr = HistoryRecorder(max_steps=200)
+hist = simulate(hr, m, planner, updater(m))
+for (s,b,a,r,sp,o) in hist
+    @show s, a, r, sp
+end
+
+for (t, step) in enumerate(stepthrough(m, policy, belief_updater, max_steps=200))
+    @guarded draw(c) do widget
+
+        # the following lines render the room, the particles, and the roomba
+        ctx = getgc(c)
+        set_source_rgb(ctx,1,1,1)
+        paint(ctx)
+        render(ctx, m, step)
+
+        # render the goal
+        gx, gy = transform_coords(goal_xy)
+        set_source_rgba(ctx, 0.0, 0.0, 1.0, 1.0)
+        arc(ctx, gx, gy, 15, 0, 2*pi)
+
+        # render some information that can help with debugging
+        # here, we render the time-step, the state, and the observation
+        move_to(ctx,70,40)
+        set_source_rgba(ctx, 0.0, 0.0, 0.0, 1.0)
+        show_text(ctx, @sprintf("t=%d",t))
+        move_to(ctx,60,570)
+        set_source_rgb(ctx, 1, 0.6, 0.6)
+        show_text(ctx, @sprintf("x=%.3f, y=%.3f",step.s.x,step.s.y))
+        move_to(ctx,60,580)
+        show_text(ctx, @sprintf("obs=%s",step.o))
+        arc(ctx, step.o*120, 500, 60, 0, 2*pi)
+        set_source_rgba(ctx, 0.0, 1.0, 0.0, 0.1)
+        fill(ctx)
+    end
+    show(c)
+    sleep(0.1) # to slow down the simulation
+end
 
 for (s, a, o) in stepthrough(m, planner, "sao", max_steps=100)
     println("State was $s,")

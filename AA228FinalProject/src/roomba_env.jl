@@ -1,7 +1,7 @@
 # Defines the environment as a POMDPs.jl MDP and POMDP
 # maintained by {jmorton2,kmenda}@stanford.edu
 
-known_commands = true
+known_commands = false
 
 # Wraps ang to be in (-pi, pi]
 function wrap_to_pi(ang::Float64)
@@ -192,8 +192,10 @@ RoombaPOMDP(;sensor=Bumper(), mdp=RoombaMDP()) = RoombaPOMDP(sensor,mdp)
 # function to determine if there is contact with a wall
 wall_contact(e::RoombaModel, state) = wall_contact(mdp(e).room, state[1:2])
 
-POMDPs.actions(m::RoombaModel) = mdp(m).aspace
-POMDPs.n_actions(m::RoombaModel) = length(mdp(m).aspace)
+# POMDPs.actions(m::RoombaModel) = mdp(m).aspace
+# POMDPs.n_actions(m::RoombaModel) = length(mdp(m).aspace) #TODO
+POMDPs.actions(m::RoombaModel) = [RoombaAct(a) for a in range(-pi, length=12, stop=pi)]
+POMDPs.n_actions(m::RoombaModel) = 12
 
 # maps a RoombaAct to an index in a RoombaModel with discrete actions
 function POMDPs.actionindex(m::RoombaModel, a::RoombaAct)
@@ -264,7 +266,26 @@ function POMDPs.transition(m::RoombaModel,
     next_status = 1.0*at_goal(next_x, next_y, m)
 
     # define next state
-    sp = RoombaState(x=next_x, y=next_y, status=next_status, cmd_1=s.cmd_1, cmd_2=s.cmd_2, cmd_3=s.cmd_3, cmd_4=s.cmd_4)
+
+	d(x,y) = abs(atan(sin(x-y), cos(x-y)))/pi
+	closest = argmin([d(a[1], cmd) for cmd in [s.cmd_1, s.cmd_2, s.cmd_3, s.cmd_4]])
+	new_cmd_1 = s.cmd_1
+	new_cmd_2 = s.cmd_2
+	new_cmd_3 = s.cmd_3
+	new_cmd_4 = s.cmd_4
+	η = 0.1
+	if closest == 1
+		new_cmd_1 += η*(a[1] - s.cmd_1)
+	elseif closest == 2
+		new_cmd_2 += η*(a[1] - s.cmd_2)
+	elseif closest == 3
+		new_cmd_3 += η*(a[1] - s.cmd_3)
+	elseif closest == 4
+		new_cmd_4 += η*(a[1] - s.cmd_4)
+	end
+
+
+    sp = RoombaState(x=next_x, y=next_y, status=next_status, cmd_1=new_cmd_1, cmd_2=new_cmd_2, cmd_3=new_cmd_3, cmd_4=new_cmd_4)
 
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         # round the states to nearest grid point
