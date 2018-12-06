@@ -66,25 +66,27 @@ function POMDPs.action(p::ToEnd, s::RoombaState)
     return RoombaAct(del_angle)
 end
 
+#
+# for (t, step) in enumerate(stepthrough(m, p, max_steps=100))
+#     @guarded draw(c) do widget
+#
+#         # the following lines render the room, the particles, and the roomba
+#         ctx = getgc(c)
+#         set_source_rgb(ctx,1,1,1)
+#         paint(ctx)
+#         render(ctx, m, step)
+#
+#         # render some information that can help with debugging
+#         # here, we render the time-step, the state, and the observation
+#         move_to(ctx,300,400)
+#         show_text(ctx, @sprintf("t=%d, state=%s",t,string(step.s)))
+#     end
+#     show(c)
+#     sleep(0.1) # to slow down the simulation
+# end
 
-for (t, step) in enumerate(stepthrough(m, p, max_steps=100))
-    @guarded draw(c) do widget
-
-        # the following lines render the room, the particles, and the roomba
-        ctx = getgc(c)
-        set_source_rgb(ctx,1,1,1)
-        paint(ctx)
-        render(ctx, m, step)
-
-        # render some information that can help with debugging
-        # here, we render the time-step, the state, and the observation
-        move_to(ctx,300,400)
-        show_text(ctx, @sprintf("t=%d, state=%s",t,string(step.s)))
-    end
-    show(c)
-    sleep(0.1) # to slow down the simulation
-end
-
+# for ease of access...
+m = RoombaMDP()
 
 # now do value iteration
 solver = ValueIterationSolver(max_iterations=100, belres=1e-3)
@@ -96,16 +98,68 @@ policy = ValueIterationPolicy(m)
 # if verbose=false, the text output will be supressed (false by default)
 policy_p = solve(solver, m)
 
-is = RoombaState(4, 4, 0, 1)
+is = RoombaState(-24, -20, 0, 3.)
 a = action(policy_p, is)
 print(a)
-println("something"
+
+
+c = @GtkCanvas()
+win = GtkWindow(c, "Roomba Environment", 600, 600)
+
+
+for i = 1:1
+    traj_rewards = 0
+    init_state = nothing
+    for (t, step) in enumerate(stepthrough(m, policy_p, max_steps=100))
+        @guarded draw(c) do widget
+            if t == 1
+                init_state = step.s
+            end
+            # the following lines render the room, the particles, and the roomba
+            ctx = getgc(c)
+            set_source_rgb(ctx,1,1,1)
+            paint(ctx)
+            render(ctx, m, step)
+
+            # render some information that can help with debugging
+            # here, we render the time-step, the state, and the observation
+            move_to(ctx,300,400)
+
+            show_text(ctx, @sprintf("t=%d, state=%s",t,string(init_state)))
+            move_to(ctx, 300, 410)
+            show_text(ctx, @sprintf("t=%d, state=%s",t,string(step.s)))
+            # show_text(ctx, @sprintf("t=%d, state=%s",t,string(step.s)))
+        end
+        println(step.a, step.s.x, step.s.y)
+        traj_rewards += step.r
+        show(c)
+        sleep(0.1) # to slow down the simulation
+    end
+    print(traj_rewards)
+end
+
+using Statistics
+
+total_rewards = []
+
+for exp = 1:100
+    #println(string(exp))
+
+    Random.seed!(exp)
+
+    p = ToEnd(0)
+    traj_rewards = sum([step.r for step in stepthrough(m,policy_p,max_steps=100)])
+
+    push!(total_rewards, traj_rewards)
+end
+
+@printf("Mean Total Reward: %.3f, StdErr Total Reward: %.3f", mean(total_rewards), std(total_rewards)/sqrt(5))
 
 
 
+println("end of file")
 
-
-)
+# do some stats stuff - run value iteration a bunch of times
 
 # for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=100))
 #     @guarded draw(c) do widget

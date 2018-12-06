@@ -81,6 +81,7 @@ function init_pos(rect::Rectangle, rng)
     init_pos = SVector(rand(rng)*w + rect.xl, rand(rng)*h + rect.yl)
 
     init_pos
+    #return SVector(w/2 + rect.xl, h/2 + rect.yl)
 end
 
 # Determines if pos (center of robot) is within the rectangle
@@ -182,6 +183,7 @@ mutable struct Room
 
         # initializes goal state
         goal_pos = init_pos(retval, MersenneTwister(0)) # TODO: Seed should be set elsewhere
+        goal_pos = SVector(-5.0, -10.0)
         retval.goal_pos = goal_pos
 
         retval

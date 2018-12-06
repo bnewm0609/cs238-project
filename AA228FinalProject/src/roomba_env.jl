@@ -463,7 +463,7 @@ function POMDPs.observation(m::Union{CommandPOMDP, OverlappingCommandPOMDP},
 
 	# calculate angle to goal using arctan - returns an angle between -pi and pi
 	# Awesome note: in Julia you can type "pi" and get the value of pi....
-	th_goal = atan(gx - x, gy - y)
+	th_goal = atan(gy - y, gx - x)
 
 	# choose action - note that there is a very explicit tie-break assumption
 	# here - we are choosing randomly

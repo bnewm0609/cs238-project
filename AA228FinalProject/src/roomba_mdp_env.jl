@@ -11,6 +11,8 @@ function wrap_to_pi(ang::Float64)
 	ang
 end
 
+USE_COMMANDS = false
+
 """
 State of a Roomba.
 
@@ -124,12 +126,12 @@ wall_contact(e::RoombaModel, state) = wall_contact(mdp(e).room, state[1:2])
 # there is probably a prettier way to do this discrete action stuff
 # POMDPs.actions(m::RoombaModel) = mdp(m).aspace
 # POMDPs.n_actions(m::RoombaModel) = length(mdp(m).aspace)
-POMDPs.actions(m::RoombaModel) = [RoombaAct(a) for a in range(-pi, length=12, stop=pi)]
-POMDPs.n_actions(m::RoombaModel) = 12
+POMDPs.actions(m::RoombaModel) = [RoombaAct(a) for a in range(-pi, length=25, stop=pi)[1:24]]
+POMDPs.n_actions(m::RoombaModel) = 24
 
 function POMDPs.actionindex(mdp::RoombaModel, action::RoombaAct)
 	act = action[1]
-	return argmin([abs(a - act) for a in range(-pi, length=12, stop=pi)])
+	return argmin([abs(a - act) for a in range(-pi, length=25, stop=pi)[1:24]])
 end;
 
 # maps a RoombaAct to an index in a RoombaModel with discrete actions
@@ -157,10 +159,12 @@ function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
     x, y = init_pos(e.room, rng)
 	gx, gy = get_goal_pos(m)
 
-	g_theta = atan(gy - y, gx - x)
-	cmd =  argmax([abs(a - g_theta) for a in range(-pi, step=pi/2, stop=pi)])
-	if cmd == 5
-		cmd = 1
+	if USE_COMMANDS
+		g_theta = atan(gy - y, gx - x)
+		cmd =  argmin([abs(a - g_theta) for a in range(-pi, step=pi/2, stop=pi)])
+		if cmd == 5
+			cmd = 1
+		end
 	end
 
 	while(at_goal(x,y,m))
@@ -168,7 +172,11 @@ function POMDPs.initialstate(m::RoombaModel, rng::AbstractRNG)
 		x, y = init_pos(e.room, rng)
 	end
 
-    is = RoombaState(x=x, y=y, cmd=cmd, status=0.0)
+	if USE_COMMANDS
+		is = RoombaState(x=x, y=y, cmd=cmd, status=0.0)
+	else
+		is = RoombaState(x=x, y=y, cmd=0, status=0.0)
+	end
 	#is = RoombaState(x=x, y=y, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4 status=0.0)
 
     if mdp(m).sspace isa DiscreteRoombaStateSpace
@@ -203,14 +211,19 @@ function POMDPs.transition(m::RoombaModel,
     next_status = 1.0*at_goal(next_x, next_y, m)
 
 	# Determine next command
-	gx, gy = get_goal_pos(m)
-	g_theta = atan(gy - next_y, gx - next_x)
-	next_cmd =  argmax([abs(a - g_theta) for a in range(-pi, step=pi/2, stop=pi)])
-	if next_cmd == 5
-		next_cmd = 1
+	if USE_COMMANDS
+		gx, gy = get_goal_pos(m)
+		g_theta = atan(gy - y, gx - x)
+		cmd =  argmin([abs(a - g_theta) for a in range(-pi, step=pi/2, stop=pi)])
+		if cmd == 5
+			cmd = 1
+		end
+		sp = RoombaState(x=next_x, y=next_y, cmd=cmd, status=next_status)
+	else
+		sp = RoombaState(x=next_x, y=next_y, cmd=0, status=next_status)
 	end
     # define next state
-    sp = RoombaState(x=next_x, y=next_y, cmd=next_cmd, status=next_status)
+
 
     if mdp(m).sspace isa DiscreteRoombaStateSpace
         # round the states to nearest grid point
@@ -228,10 +241,12 @@ function POMDPs.states(m::RoombaModel)
         x_states = range(ss.XLIMS[1], stop=ss.XLIMS[2], step=ss.x_step)
         y_states = range(ss.YLIMS[1], stop=ss.YLIMS[2], step=ss.y_step)
 		cmd_states = [1., 2., 3., 4.]
-		#cmd_states = range(-pi, stop=pi, step=ss.cmd_step)  # For Modified Problem
         statuses = [0.,1.]
-        #return vec(collect(RoombaState(x=x,y=y,status=st) for x in x_states, y in y_states, st in statuses))
-        return vec(collect(RoombaState(x=x,y=y,cmd=cmd,status=st) for x in x_states, y in y_states, cmd in cmd_states, st in statuses))
+		if USE_COMMANDS
+			return vec(collect(RoombaState(x=x,y=y,cmd=cmd,status=st) for x in x_states, y in y_states, cmd in cmd_states, st in statuses))
+		else
+			return vec(collect(RoombaState(x=x,y=y,cmd=0,status=st) for x in x_states, y in y_states, st in statuses))
+		end
     else
         return mdp(m).sspace
     end
@@ -244,9 +259,14 @@ function POMDPs.n_states(m::RoombaModel)
     	# 	nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
         #                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
         #                     2))
+		n_comms = 1
+		if USE_COMMANDS
+			n_comms = 4
+		end
+
         nstates = prod((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
 						convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-						2, 4))
+						2, n_comms))
         return nstates
     else
         error("State-space must be DiscreteRoombaStateSpace.")
@@ -274,11 +294,20 @@ function POMDPs.state_index(m::RoombaModel, s::RoombaState)
         # lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
         #                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
         #                     2))
+		n_comms = 1
+		if USE_COMMANDS
+			n_comms = 4
+		end
+
 		lin = LinearIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
 	                        convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-	                        2, 4))
+	                        2, n_comms))
 		#return lin[xind,yind,stind]
-        return lin[xind,yind,stind,cmdind]  # For Modified Problem
+		if USE_COMMANDS
+			return lin[xind,yind,stind,cmdind]  # For Modified Problem
+		else
+			return lin[xind, yind, stind, 1] # only one "command"
+		end
     else
         error("State-space must be DiscreteRoombaStateSpace.")
     end
@@ -291,9 +320,13 @@ function index_to_state(m::RoombaModel, si::Int)
         # lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,
         #                     convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
         #                     2))
+		n_comms = 1
+		if USE_COMMANDS
+			n_comms = 4
+		end
 		lin = CartesianIndices((convert(Int, diff(ss.XLIMS)[1]/ss.x_step)+1,  # For Modified Problem
 		                    convert(Int, diff(ss.YLIMS)[1]/ss.y_step)+1,
-	                      	2, 4))
+	                      	2, n_comms))
 
         #xi,yi,sti = Tuple(lin[si])
 		xi,yi,sti,cmdi = Tuple(lin[si])  # For Modified Problem
