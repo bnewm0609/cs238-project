@@ -153,7 +153,8 @@ using Statistics
 
 total_rewards = []
 
-for exp = 1:100
+n = 100
+for exp = 1:n
     #println(string(exp))
 
     Random.seed!(exp)
@@ -164,7 +165,7 @@ for exp = 1:100
     push!(total_rewards, traj_rewards)
 end
 
-@printf("Mean Total Reward: %.3f, StdErr Total Reward: %.3f", mean(total_rewards), std(total_rewards)/sqrt(5))
+@printf("Mean Total Reward: %.3f, StdErr Total Reward: %.3f", mean(total_rewards), std(total_rewards)/sqrt(n))
 
 
 
