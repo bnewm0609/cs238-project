@@ -121,23 +121,23 @@ for i = 1:1
             ctx = getgc(c)
             set_source_rgb(ctx,1,1,1)
             paint(ctx)
-            render(ctx, m, step)
+            render(ctx, m, step, saved)
 
             # render the goal
             gx, gy = transform_coords(goal_xy)
-            set_source_rgba(ctx, 0.0, 0.0, 1.0, 1.0)
+            set_source_rgba(ctx, 0.0, 1.0, 0.0, 0.5)
             arc(ctx, gx, gy, 15, 0, 2*pi)
             fill(ctx)
 
             # render some information that can help with debugging
             # here, we render the time-step, the state, and the observation
-            move_to(ctx,70,40)
+            move_to(ctx,60,160)
             set_source_rgba(ctx, 0.0, 0.0, 0.0, 1.0)
             show_text(ctx, @sprintf("t=%d",t))
             move_to(ctx,60,570)
             set_source_rgb(ctx, 1, 0.6, 0.6)
-            show_text(ctx, @sprintf("x=%.3f, y=%.3f",step.s.x,step.s.y))
-            move_to(ctx,60,580)
+            show_text(ctx, @sprintf("x=%.3f, y=%.3f, cmd=%.1f",step.s.x,step.s.y,step.s.cmd))
+
         end
         println(step.a, step.s.x, step.s.y)
         traj_rewards += step.r

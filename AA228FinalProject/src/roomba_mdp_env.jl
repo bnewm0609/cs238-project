@@ -382,7 +382,7 @@ POMDPs.rand(rng::AbstractRNG, d::RoombaInitialDistribution) = initialstate(d.m, 
 POMDPs.initialstate_distribution(m::RoombaModel) = RoombaInitialDistribution(m)
 
 # Render a room and show robot
-function render(ctx::CairoContext, m::RoombaModel, step)
+function render(ctx::CairoContext, m::RoombaModel, step, saved)
     env = mdp(m)
     state = step[:sp]
 
@@ -403,6 +403,21 @@ function render(ctx::CairoContext, m::RoombaModel, step)
 
     # Render room
     render(env.room, ctx)
+
+	# Render path
+	prev = nothing
+	for i in 1:length(saved)
+		pos = saved[i]
+		end_x, end_y = transform_coords(pos[1:2])
+		if prev != nothing
+			start_x, start_y = prev
+			set_source_rgba(ctx, 1, 0.6, 0.6, 0.1+ 0.9(i/length(saved)))
+			move_to(ctx, start_x, start_y)
+		    line_to(ctx, end_x, end_y)
+		    stroke(ctx)
+		end
+		prev = end_x, end_y
+	end
 
     # Find center of robot in frame and draw circle
     x, y = transform_coords(state[1:2])
