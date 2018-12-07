@@ -114,8 +114,9 @@ for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=500))
 
         # render the goal
         gx, gy = transform_coords(goal_xy)
-        set_source_rgba(ctx, 0.0, 0.0, 1.0, 1.0)
+        set_source_rgba(ctx, 0.0, 1.0, 0.0, 1.0)
         arc(ctx, gx, gy, 15, 0, 2*pi)
+        fill(ctx)
 
         # render some information that can help with debugging
         # here, we render the time-step, the state, and the observation
