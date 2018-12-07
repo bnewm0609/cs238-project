@@ -1,8 +1,8 @@
 # Defines the environment as a POMDPs.jl MDP and POMDP
 # maintained by {jmorton2,kmenda}@stanford.edu
 
-known_commands = false
-learn_directions = true
+known_commands = true
+learn_directions = false
 
 # Wraps ang to be in (-pi, pi]
 function wrap_to_pi(ang::Float64)

@@ -35,13 +35,14 @@ using FIB
 using SARSOP
 using QMDP
 
-Random.seed!(1) #28 is hard
+Random.seed!(44) #44  25
 
 sensor = Command()
 m = RoombaPOMDP(sensor=sensor, mdp=RoombaMDP());
 num_particles = 3000
 
 resampler = CommandResampler(num_particles, LowVarianceResampler(num_particles))
+
 spf = SimpleParticleFilter(m, resampler)
 
 theta_noise_coeff = 0.1
@@ -64,19 +65,19 @@ c = @GtkCanvas()
 
 win = GtkWindow(c, "Roomba Environment", 600, 600)
 
-struct Heuristic <:Policy
-end
-function POMDPs.action(p::Heuristic, s::RoombaState)
-    x, y = s
-    gx, gy = get_goal_pos(m)
-    th_goal = atan(gy - y, gx - x)
-    return RoombaAct(th_goal, true)
-end
-p = Heuristic()
-solver = POMCPSolver(c=1., max_depth=50)#, estimate_value=FORollout(p))
-p = solve(solver, m)
+# trying out other solvers
 
-
+# struct Heuristic <:Policy
+# end
+# function POMDPs.action(p::Heuristic, s::RoombaState)
+#     x, y = s
+#     gx, gy = get_goal_pos(m)
+#     th_goal = atan(gy - y, gx - x)
+#     return RoombaAct(th_goal, true)
+# end
+# p = Heuristic()
+# solver = POMCPSolver(c=1., max_depth=50)#, estimate_value=FORollout(p))
+# p = solve(solver, m)
 # solver = FIBSolver()
 # p = solve(solver, m)
 # solver = QMDPSolver(max_iterations=3,
@@ -88,13 +89,14 @@ p = solve(solver, m)
 # p = solve(solver, m)
 # solver = DESPOTSolver(bounds=(0.0,10.))
 # p = solve(solver, m)
-solver = POMCPOWSolver(max_depth=50, criterion=MaxUCB(20.0))# ,
-p = solve(solver, m)
 # hr = HistoryRecorder(max_steps=100)
 # hist = simulate(hr, m, p)
 # for (s, b, a, r, sp, o) in hist
 #     @show s, a, r, sp
 # end
+
+solver = POMCPOWSolver(max_depth=50, criterion=MaxUCB(20.0))# ,
+p = solve(solver, m)
 
 # is = RoombaState(x=-5.,y=-10.,status=0.0)
 # dist = initialstate_distribution(m)
@@ -132,8 +134,9 @@ for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=500))
         set_source_rgba(ctx, 0.0, 1.0, 0.0, 0.1)
         fill(ctx)
     end
+
     show(c)
-    sleep(0.01) # to slow down the simulation
+    sleep(0.1) # to slow down the simulation
 end
 
 
@@ -166,21 +169,36 @@ end
 
 ############
 
-# using Statistics
-#
-# total_rewards = []
-#
-# for exp = 1:5
-#     println(string(exp))
-#
-#     Random.seed!(exp)
-#
-#     p = ToEnd(0)
-#     traj_rewards = sum([step.r for step in stepthrough(m,p,belief_updater, max_steps=100)])
-#
-#     push!(total_rewards, traj_rewards)
-# end
-#
-# @printf("Mean Total Reward: %.3f, StdErr Total Reward: %.3f", mean(total_rewards), std(total_rewards)/sqrt(5))
+using Statistics
+
+total_rewards = []
+total_time = []
+total_mappings = []
+
+n = 100
+for exp = 1:n
+    println(string(exp))
+
+    Random.seed!(exp)
+
+    steps = [step for step in stepthrough(m,p,belief_updater, max_steps=200)]
+
+    rewards = [step.r for step in steps]
+    traj_rewards = sum(rewards)
+    time = length(steps)
+    mapping = (steps[time].s.cmd_1, steps[time].s.cmd_2, steps[time].s.cmd_3, steps[time].s.cmd_4)
+
+    push!(total_rewards, traj_rewards)
+    push!(total_time, time)
+    push!(total_mappings, mapping)
+end
+
+@printf("Mean Total Reward: %.3f, StdErr Total Reward: %.3f", mean(total_rewards), std(total_rewards)/sqrt(n))
+
+@printf("Mean Total Time: %.3f, StdErr Total Time: %.3f", mean(total_time), std(total_time)/sqrt(n))
+
+for i in 1:length(total_mappings)
+    println("$(total_mappings[i]), $(total_time[i]), $(total_rewards[i])")
+end
 
 #############
