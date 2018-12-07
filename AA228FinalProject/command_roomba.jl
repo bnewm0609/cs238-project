@@ -35,7 +35,7 @@ using FIB
 using SARSOP
 using QMDP
 
-Random.seed!(4308) #28 is hard
+Random.seed!(1) #28 is hard
 
 sensor = Command()
 m = RoombaPOMDP(sensor=sensor, mdp=RoombaMDP());
@@ -73,7 +73,7 @@ function POMDPs.action(p::Heuristic, s::RoombaState)
     return RoombaAct(th_goal, true)
 end
 p = Heuristic()
-solver = POMCPSolver(c=1., max_depth=200, estimate_value=FORollout(p))
+solver = POMCPSolver(c=1., max_depth=50)#, estimate_value=FORollout(p))
 p = solve(solver, m)
 
 
@@ -114,13 +114,13 @@ for (t, step) in enumerate(stepthrough(m, p, belief_updater, max_steps=500))
 
         # render the goal
         gx, gy = transform_coords(goal_xy)
-        set_source_rgba(ctx, 0.0, 1.0, 0.0, 1.0)
+        set_source_rgba(ctx, 0.0, 1.0, 0.0, 0.5)
         arc(ctx, gx, gy, 15, 0, 2*pi)
         fill(ctx)
 
         # render some information that can help with debugging
         # here, we render the time-step, the state, and the observation
-        move_to(ctx,70,40)
+        move_to(ctx,60,40)
         set_source_rgba(ctx, 0.0, 0.0, 0.0, 1.0)
         show_text(ctx, @sprintf("t=%d",t))
         move_to(ctx,60,570)

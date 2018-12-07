@@ -286,33 +286,8 @@ function POMDPs.transition(m::RoombaModel,
 	if !known_commands && a[2] == true
 		η = 0.3
 
-		### TODO TEMPORARY
-		cmd_received = 0
-		# basically what we have to do is get the direction to the room and then
-		# use some tie-breaking scheme to decide what to return
-		# x, y = sp # assume that the first two elements of the state are x, y
-				  # (In Julia, you only have to unpack the first n elemenst of tuples)
-		gx, gy = get_goal_pos(m)
-
-		# calculate angle to goal using arctan - returns an angle between -pi and pi
-		# Awesome note: in Julia you can type "pi" and get the value of pi....
-		th_goal = atan(gy - y, gx - x)
-
-		# choose action - note that there is a very explicit tie-break assumption
-		# here - we are choosing randomly
-		dirs = Random.shuffle(m.sensor.dirs)
-
-		for (cmd, dir) in dirs
-			if cmd == 1 # because of wrapping, we need to handle this case differently
-				if th_goal <= dir[1] || th_goal > dir[2]
-					cmd_received = cmd
-				end
-			elseif th_goal <= dir[1] && th_goal > dir[2]
-				cmd_received = cmd
-			end
-		end
-		### END TEMPORARY
-
+		cmd_received = speaker_response(m, s).val
+		@assert cmd_received == 1 || cmd_received == 2 || cmd_received == 3 || cmd_received == 4
 
 		opp = wrap_to_pi(pi + theta)
 
@@ -536,15 +511,12 @@ end
 POMDPs.n_observations(m::DiscreteLidarPOMDP) = length(m.sensor.disc_points) + 1
 POMDPs.observations(m::DiscreteLidarPOMDP) = vec(1:n_observations(m))
 
-
-# new stuff
-function POMDPs.observation(m::CommandPOMDP,
-				   a::AbstractVector{Float64},
+function speaker_response(m::CommandPOMDP,
 				   sp::AbstractVector{Float64})
 	# basically what we have to do is get the direction to the room and then
 	# use some tie-breaking scheme to decide what to return
 	x, y = sp # assume that the first two elements of the state are x, y
-			  # (In Julia, you only have to unpack the first n elemenst of tuples)
+			  # (In Julia, you only have to unpack the first n elements of tuples)
 	gx, gy = get_goal_pos(m)
 
 	# calculate angle to goal using arctan - returns an angle between -pi and pi
@@ -566,6 +538,14 @@ function POMDPs.observation(m::CommandPOMDP,
 	end
 	@assert false # we shouldn't get here
 end
+
+# new stuff
+function POMDPs.observation(m::CommandPOMDP,
+				   a::AbstractVector{Float64},
+				   sp::AbstractVector{Float64})
+	return speaker_response(m, sp)
+end
+
 POMDPs.n_observations(m::CommandPOMDP) = length(m.sensor.dirs)
 POMDPs.observations(m::CommandPOMDP) = vec(1:4)
 
