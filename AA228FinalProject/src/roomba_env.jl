@@ -2,6 +2,7 @@
 # maintained by {jmorton2,kmenda}@stanford.edu
 
 known_commands = false
+learn_directions = true
 
 # Wraps ang to be in (-pi, pi]
 function wrap_to_pi(ang::Float64)
@@ -38,6 +39,7 @@ end
 # Struct for a Roomba action
 struct RoombaAct <: FieldVector{1, Float64}
     theta::Float64     # direction of movement
+	learn::Bool
 end
 
 # action spaces
@@ -61,18 +63,18 @@ Define the Roomba MDP.
 - `time_pen::Float64` penalty per time-step
 - `goal_reward::Float64` reward for reaching goal
 - `room::Room` environment room struct
-- `sspace::SS` environment state-space (ContinuousRoombaStateSpace or DiscreteRoombaStateSpace)
+- `sspace::SS` environment state-space (ContinuousRooxmbaStateSpace or DiscreteRoombaStateSpace)
 - `aspace::AS` environment action-space struct
 """
 @with_kw mutable struct RoombaMDP{SS,AS} <: MDP{RoombaState, RoombaAct}
-    v::Float64  = 0.5  # m/s
+    v::Float64  = 3  # m/s
     dt::Float64     = 0.5   # s
     contact_pen::Float64 = -1.0
     time_pen::Float64 = -0.1
-    goal_reward::Float64 = 10
+    goal_reward::Float64 = 100
     room::Room  = Room()
-    sspace::SS = ContinuousRoombaStateSpace()
-    aspace::AS = RoombaActions()
+    sspace::SS =  ContinuousRoombaStateSpace() # DiscreteRoombaStateSpace(30,30,24)
+    aspace::AS = [RoombaAct(a, b) for b in [true] for a in range(-pi, length=25, stop=pi)[1:24]] # RoombaActions()
     _amap::Union{Nothing, Dict{RoombaAct, Int}} = gen_amap(aspace)
 end
 
@@ -163,6 +165,9 @@ end
 # The case is handled correctly in the POMDPs.observation function
 Command() = Command([(1, (-3pi/4, 3pi/4)), (2, (-pi/4, -3pi/4)),
 					(3, (pi/4, -pi/4)), (4, (3pi/4, pi/4))])
+# Command() = Command([(1, (-pi/2, pi/2)), (2, (0, -pi)),
+# 					(3, (pi/2, -pi/2)), (4, (pi, 0))])
+
 
 
 POMDPs.obstype(::Type{Command}) = Int # 1, 2, 3, 4 for left, down, right, up
@@ -192,10 +197,10 @@ RoombaPOMDP(;sensor=Bumper(), mdp=RoombaMDP()) = RoombaPOMDP(sensor,mdp)
 # function to determine if there is contact with a wall
 wall_contact(e::RoombaModel, state) = wall_contact(mdp(e).room, state[1:2])
 
-# POMDPs.actions(m::RoombaModel) = mdp(m).aspace
-# POMDPs.n_actions(m::RoombaModel) = length(mdp(m).aspace) #TODO
-POMDPs.actions(m::RoombaModel) = [RoombaAct(a) for a in range(-pi, length=12, stop=pi)]
-POMDPs.n_actions(m::RoombaModel) = 12
+POMDPs.actions(m::RoombaModel) = mdp(m).aspace
+POMDPs.n_actions(m::RoombaModel) = length(mdp(m).aspace) #TODO
+# POMDPs.actions(m::RoombaModel) = [RoombaAct(a) for a in range(-pi, length=25, stop=pi)[1:24]]
+# POMDPs.n_actions(m::RoombaModel) = 24
 
 # maps a RoombaAct to an index in a RoombaModel with discrete actions
 function POMDPs.actionindex(m::RoombaModel, a::RoombaAct)
@@ -211,9 +216,16 @@ function get_goal_pos(m::RoombaModel)
     return mdp(m).room.goal_pos
 end
 
-function at_goal(x, y, m::RoombaModel)
+function at_goal(cmd_1, cmd_2, cmd_3, cmd_4, x, y, m::RoombaModel)
     goal_x, goal_y = get_goal_pos(m)
-	return (abs(x - goal_x) < .2) && abs(y - goal_y) < .2 # TODO: Make a more robust buffer
+	# return (abs(x - goal_x) < 2) && abs(y - goal_y) < 2 # TODO: Make a more robust buffer
+	d(x,y) = abs(atan(sin(x-y), cos(x-y)))/pi
+	angle_diff_sum = d(cmd_1, pi) + d(cmd_2, -pi/2) + d(cmd_3, 0.) + d(cmd_4, pi/2.)
+	if learn_directions
+		return (abs(x - goal_x) < 2) && abs(y - goal_y) < 2 && d(cmd_1, pi) < 0.25 && d(cmd_2, -pi/2) < 0.25 && d(cmd_3, 0.) < 0.25 && d(cmd_4, pi/2.) < 0.25
+	else
+		return (abs(x - goal_x) < 2) && abs(y - goal_y) < 2
+	end
 end
 
 # initializes x,y of Roomba in the room
@@ -245,10 +257,10 @@ end
 # transition Roomba state given curent state and action
 function POMDPs.transition(m::RoombaModel,
                            s::AbstractVector{Float64},
-                           a::AbstractVector{Float64})
+                           a)#::AbstractVector{Float64})
 
     e = mdp(m)
-    theta = a[1]
+    theta = a[1][1][1]
     theta = wrap_to_pi(theta)
 
     # propagate dynamics without wall considerations
@@ -262,28 +274,71 @@ function POMDPs.transition(m::RoombaModel,
     des_step = v*dt
     next_x, next_y = legal_translate(e.room, p0, heading, des_step)
 
-    # Determine whether goal has been reached
-    next_status = 1.0*at_goal(next_x, next_y, m)
-
     # define next state
 
 	d(x,y) = abs(atan(sin(x-y), cos(x-y)))/pi
-	closest = argmin([d(a[1], cmd) for cmd in [s.cmd_1, s.cmd_2, s.cmd_3, s.cmd_4]])
+	closest = argmin([d(theta, cmd) for cmd in [s.cmd_1, s.cmd_2, s.cmd_3, s.cmd_4]])
 	new_cmd_1 = s.cmd_1
 	new_cmd_2 = s.cmd_2
 	new_cmd_3 = s.cmd_3
 	new_cmd_4 = s.cmd_4
-	η = 0.1
-	if closest == 1
-		new_cmd_1 += η*(a[1] - s.cmd_1)
-	elseif closest == 2
-		new_cmd_2 += η*(a[1] - s.cmd_2)
-	elseif closest == 3
-		new_cmd_3 += η*(a[1] - s.cmd_3)
-	elseif closest == 4
-		new_cmd_4 += η*(a[1] - s.cmd_4)
+
+	if !known_commands && a[2] == true
+		η = 0.3
+
+		### TODO TEMPORARY
+		cmd_received = 0
+		# basically what we have to do is get the direction to the room and then
+		# use some tie-breaking scheme to decide what to return
+		# x, y = sp # assume that the first two elements of the state are x, y
+				  # (In Julia, you only have to unpack the first n elemenst of tuples)
+		gx, gy = get_goal_pos(m)
+
+		# calculate angle to goal using arctan - returns an angle between -pi and pi
+		# Awesome note: in Julia you can type "pi" and get the value of pi....
+		th_goal = atan(gy - y, gx - x)
+
+		# choose action - note that there is a very explicit tie-break assumption
+		# here - we are choosing randomly
+		dirs = Random.shuffle(m.sensor.dirs)
+
+		for (cmd, dir) in dirs
+			if cmd == 1 # because of wrapping, we need to handle this case differently
+				if th_goal <= dir[1] || th_goal > dir[2]
+					cmd_received = cmd
+				end
+			elseif th_goal <= dir[1] && th_goal > dir[2]
+				cmd_received = cmd
+			end
+		end
+		### END TEMPORARY
+
+
+		opp = wrap_to_pi(pi + theta)
+
+		# new_cmd_1 += η*(opp - s.cmd_1)
+		# new_cmd_2 += η*(opp - s.cmd_2)
+		# new_cmd_3 += η*(opp - s.cmd_3)
+		# new_cmd_4 += η*(opp - s.cmd_4)
+
+		if cmd_received == 1
+			# new_cmd_1 -= η*(opp - s.cmd_1)
+			new_cmd_1 += η*(theta - s.cmd_1)
+		elseif cmd_received == 2
+			# new_cmd_2 -= η*(opp - s.cmd_2)
+			new_cmd_2 += η*(theta - s.cmd_2)
+		elseif cmd_received == 3
+			# new_cmd_3 -= η*(opp - s.cmd_3)
+			new_cmd_3 += η*(theta - s.cmd_3)
+		elseif cmd_received == 4
+			# new_cmd_4 -= η*(opp - s.cmd_4)
+			new_cmd_4 += η*(theta - s.cmd_4)
+		end
+
 	end
 
+	# Determine whether goal has been reached
+    next_status = 1.0*at_goal(new_cmd_1, new_cmd_2, new_cmd_3, new_cmd_4, next_x, next_y, m)
 
     sp = RoombaState(x=next_x, y=next_y, status=next_status, cmd_1=new_cmd_1, cmd_2=new_cmd_2, cmd_3=new_cmd_3, cmd_4=new_cmd_4)
 
@@ -307,7 +362,8 @@ function POMDPs.states(m::RoombaModel)
 		cmd_2_states = known_commands ? [-pi/2.] : range(-pi, stop=pi, step=ss.cmd_step)
 		cmd_3_states = known_commands ? [0.] : range(-pi, stop=pi, step=ss.cmd_step)
 		cmd_4_states = known_commands ? [pi/2.] : range(-pi, stop=pi, step=ss.cmd_step)
-        return vec(collect(RoombaState(x=x,y=y,cmd_1=cmd_1,cmd_2=cmd_2,cmd_3=cmd_3,cmd_4=cmd_4,status=st) for x in x_states, y in y_states, st in statuses, cmd_1 in cmd_1_states, cmd_2 in cmd_2_states, cmd_3 in cmd_3_states, cmd_4 in cmd_4_states))
+        return vec(collect(RoombaState(x=x,y=y,cmd_1=cmd_1,cmd_2=cmd_2,cmd_3=cmd_3,cmd_4=cmd_4,status=st)
+			for x in x_states, y in y_states, st in statuses, cmd_1 in cmd_1_states, cmd_2 in cmd_2_states, cmd_3 in cmd_3_states, cmd_4 in cmd_4_states))
     else
         return mdp(m).sspace
     end
@@ -386,7 +442,7 @@ function index_to_state(m::RoombaModel, si::Int)
 		cmd_3 = known_commands ? 0.     : -pi + (cmd3i-1) * ss.cmd_step
 		cmd_4 = known_commands ? pi/2.  : -pi + (cmd4i-1) * ss.cmd_step
 
-        return RoombaState(x=x, y=y, status=st, cmd_1=cmd_1, cmd2=cmd2, cmd3=cmd3, cmd4=cmd4)
+        return RoombaState(x=x, y=y, status=st, cmd_1=cmd_1, cmd_2=cmd_2, cmd_3=cmd_3, cmd_4=cmd_4)
 
     else
         error("State-space must be DiscreteRoombaStateSpace.")
@@ -412,6 +468,14 @@ function POMDPs.reward(m::RoombaModel,
 
     # terminal rewards
     cum_reward += mdp(m).goal_reward*(sp.status == 1.0)
+
+	# abs_dot(x, y) = abs(sin(x) * sin(y) + cos(x) * cos(y))
+	# mapping_cost = 0
+	# mapping_cost += abs_dot(s.cmd_1, s.cmd_2)
+	# mapping_cost += abs_dot(s.cmd_2, s.cmd_3)
+	# mapping_cost += abs_dot(s.cmd_3, s.cmd_4)
+	# mapping_cost += abs_dot(s.cmd_4, s.cmd_1)
+	# cum_reward -= 10 * mapping_cost
 
     return cum_reward
 end
@@ -491,13 +555,13 @@ function POMDPs.observation(m::CommandPOMDP,
 	# here - we are choosing randomly
 	dirs = Random.shuffle(m.sensor.dirs)
 
-	for (a, dir) in dirs
-		if a == 1 # because of wrapping, we need to handle this case differently
+	for (cmd, dir) in dirs
+		if cmd == 1 # because of wrapping, we need to handle this case differently
 			if th_goal <= dir[1] || th_goal > dir[2]
-				return Deterministic(a)
+				return Deterministic(cmd)
 			end
 		elseif th_goal <= dir[1] && th_goal > dir[2]
-			return Deterministic(a)
+			return Deterministic(cmd)
 		end
 	end
 	@assert false # we shouldn't get here
@@ -518,7 +582,7 @@ POMDPs.rand(rng::AbstractRNG, d::RoombaInitialDistribution) = initialstate(d.m, 
 POMDPs.initialstate_distribution(m::RoombaModel) = RoombaInitialDistribution(m)
 
 # Render a room and show robot
-function render(ctx::CairoContext, m::RoombaModel, step)
+function render(ctx::CairoContext, m::RoombaModel, step, saved)
     env = mdp(m)
     state = step[:sp]
 
@@ -533,17 +597,7 @@ function render(ctx::CairoContext, m::RoombaModel, step)
                 arc(ctx, x, y, radius, 0, 2*pi)
                 set_source_rgba(ctx, 0.6, 0.6, 1, 0.3)
                 fill(ctx)
-
-				# command belief
-				ctr_x = 120
-				ctr_y = 500
-				for i = 4:7
-					x = ctr_x * (i-3) + 50 * cos(p[i])
-					y = ctr_y - 50 * sin(p[i]) # TODO: check; because y coordinates are flipped
-					arc(ctx, x, y, radius, 0, 2*pi)
-					set_source_rgba(ctx, 0.6, 0.6, 1, 0.3)
-					fill(ctx)
-				end
+				render_command_mapping(ctx, p, true)
             end
         end
     end
@@ -560,7 +614,41 @@ function render(ctx::CairoContext, m::RoombaModel, step)
     set_source_rgb(ctx, 1, 0.6, 0.6)
     fill(ctx)
 
+	prev = nothing
+	for i in 1:length(saved)
+		pos = saved[i]
+		end_x, end_y = transform_coords(pos[1:2])
+		if prev != nothing
+			start_x, start_y = prev
+			set_source_rgba(ctx, 1, 0.6, 0.6, 0.1+ 0.9(i/length(saved)))
+			move_to(ctx, start_x, start_y)
+		    line_to(ctx, end_x, end_y)
+		    stroke(ctx)
+		end
+		prev = end_x, end_y
+	end
+
+	render_command_mapping(ctx, state, false)
+
     return ctx
+end
+
+function render_command_mapping(ctx::CairoContext, state, belief::Bool)
+	radius = ROBOT_W*6
+
+	ctr_x = 120
+	ctr_y = 500
+	for i = 4:7
+		x = ctr_x * (i-3) + 50 * cos(state[i])
+		y = ctr_y - 50 * sin(state[i]) # TODO: check; because y coordinates are flipped
+		arc(ctx, x, y, radius, 0, 2*pi)
+		if belief
+			set_source_rgba(ctx, 0.6, 0.6, 1, 0.3)
+		else
+			set_source_rgba(ctx, 1.0, 0.6, 0.6, 1.0)
+		end
+		fill(ctx)
+	end
 end
 
 function render_commands(ctx::CairoContext)

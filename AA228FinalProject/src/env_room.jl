@@ -181,8 +181,8 @@ mutable struct Room
         retval.areas = [r.area for r in rectangles]
 
         # initializes goal state
-        goal_pos = init_pos(retval, MersenneTwister(10)) # TODO: Seed should be set elsewhere
-        retval.goal_pos = goal_pos
+        goal_pos = init_pos(retval, MersenneTwister(10)) # TODO: Set random seed elsewhere
+        retval.goal_pos = [-5, -10] # goal_pos
 
         retval
     end
