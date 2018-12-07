@@ -110,7 +110,9 @@ win = GtkWindow(c, "Roomba Environment", 600, 600)
 for i = 1:1
     traj_rewards = 0
     init_state = nothing
+    saved = []
     for (t, step) in enumerate(stepthrough(m, policy_p, max_steps=100))
+        push!(saved, step[:sp])
         @guarded draw(c) do widget
             if t == 1
                 init_state = step.s
@@ -121,14 +123,21 @@ for i = 1:1
             paint(ctx)
             render(ctx, m, step)
 
+            # render the goal
+            gx, gy = transform_coords(goal_xy)
+            set_source_rgba(ctx, 0.0, 0.0, 1.0, 1.0)
+            arc(ctx, gx, gy, 15, 0, 2*pi)
+            fill(ctx)
+
             # render some information that can help with debugging
             # here, we render the time-step, the state, and the observation
-            move_to(ctx,300,400)
-
-            show_text(ctx, @sprintf("t=%d, state=%s",t,string(init_state)))
-            move_to(ctx, 300, 410)
-            show_text(ctx, @sprintf("t=%d, state=%s",t,string(step.s)))
-            # show_text(ctx, @sprintf("t=%d, state=%s",t,string(step.s)))
+            move_to(ctx,70,40)
+            set_source_rgba(ctx, 0.0, 0.0, 0.0, 1.0)
+            show_text(ctx, @sprintf("t=%d",t))
+            move_to(ctx,60,570)
+            set_source_rgb(ctx, 1, 0.6, 0.6)
+            show_text(ctx, @sprintf("x=%.3f, y=%.3f",step.s.x,step.s.y))
+            move_to(ctx,60,580)
         end
         println(step.a, step.s.x, step.s.y)
         traj_rewards += step.r
@@ -137,6 +146,8 @@ for i = 1:1
     end
     print(traj_rewards)
 end
+
+
 
 using Statistics
 
